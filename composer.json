@@ -1,0 +1,65 @@
+{
+    "name": "tobento/app-http",
+    "type": "library",
+    "description": "App http support.",
+    "keywords": [
+        "tobento",
+        "package",
+        "app",
+        "http",
+        "middleware",
+        "routing",
+        "session"
+	],
+    "homepage": "https://www.tobento.ch",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Tobias Strub",
+            "email": "info@tobento.ch",
+            "homepage": "https://www.tobento.ch"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=8.0",
+        "psr/container": "^2.0",
+        "psr/http-message": "^1.0",
+        "psr/http-server-handler": "^1.0",
+        "psr/http-server-middleware": "^1.0",
+        "nyholm/psr7": "^1.4",
+        "nyholm/psr7-server": "^1.0",
+        "laminas/laminas-httphandlerrunner": "^1.4",
+        "tobento/app": "^1.0",
+        "tobento/app-migration": "^1.0",
+        "tobento/service-middleware": "^1.0",
+        "tobento/service-routing": "^1.0",
+        "tobento/service-session": "^1.0",
+        "tobento/service-requester": "^1.0",
+        "tobento/service-responser": "^1.0",
+        "tobento/service-uri": "^1.0",
+        "tobento/service-config": "^1.0",
+        "tobento/service-migration": "^1.0",
+        "tobento/service-error-handler": "^1.0"
+    },  
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "vimeo/psalm": "^4.0",
+        "tobento/service-view": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tobento\\App\\Http\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tobento\\App\\Http\\Test\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "phpunit --testdox --colors=always",
+        "psalm": "vendor/bin/psalm"
+    }
+}
