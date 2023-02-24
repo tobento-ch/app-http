@@ -32,10 +32,13 @@ class RoutingWithMiddlewareBaseTest extends RoutingTest
             (new Dir())->delete(__DIR__.'/../app/');
         }
         
+        (new Dir())->create(__DIR__.'/../app/');
+        (new Dir())->create(__DIR__.'/../app/config/');
+        
         $app = (new AppFactory())->createApp();
         
         $app->dirs()
-            ->dir(__DIR__.'/../app/', 'app')
+            ->dir(realpath(__DIR__.'/../app/'), 'app')
             ->dir($app->dir('app').'config', 'config', group: 'config');
         
         // Replace response emitter for testing:

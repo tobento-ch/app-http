@@ -40,10 +40,13 @@ class RequesterResponserTest extends TestCase
             (new Dir())->delete(__DIR__.'/../app/');
         }
         
+        (new Dir())->create(__DIR__.'/../app/');
+        (new Dir())->create(__DIR__.'/../app/config/');
+        
         $app = (new AppFactory())->createApp();
         
         $app->dirs()
-            ->dir(__DIR__.'/../app/', 'app')
+            ->dir(realpath(__DIR__.'/../app/'), 'app')
             ->dir($app->dir('app').'config', 'config', group: 'config');
         
         // Replace response emitter for testing:
@@ -83,7 +86,7 @@ class RequesterResponserTest extends TestCase
             return new View\View(
                 new View\PhpRenderer(
                     new Dirs(
-                        new ServiceDir(__DIR__.'/../view/'),
+                        new ServiceDir(realpath(__DIR__.'/../view/')),
                     )
                 ),
                 new View\Data(),
