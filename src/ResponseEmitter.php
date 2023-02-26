@@ -27,6 +27,11 @@ class ResponseEmitter implements ResponseEmitterInterface
     protected array $beforeHandlers = [];
     
     /**
+     * @var array<int, callable>
+     */    
+    protected array $afterHandlers = [];
+    
+    /**
      * Add handler before the response is emitted.
      *
      * @param callable $handler
@@ -35,6 +40,18 @@ class ResponseEmitter implements ResponseEmitterInterface
     public function before(callable $handler): static
     {
         $this->beforeHandlers[] = $handler;
+        return $this;
+    }
+    
+    /**
+     * Add handler after the response is emitted.
+     *
+     * @param callable $handler
+     * @return static
+     */
+    public function after(callable $handler): static
+    {
+        $this->afterHandlers[] = $handler;
         return $this;
     }
     
@@ -51,5 +68,9 @@ class ResponseEmitter implements ResponseEmitterInterface
         }
         
         (new SapiEmitter())->emit($response);
+        
+        foreach($this->afterHandlers as $handler) {
+            call_user_func($handler);
+        }
     }
 }

@@ -32,6 +32,14 @@ interface ResponseEmitterInterface
     public function before(callable $handler): static;
     
     /**
+     * Add handler after the response is emitted.
+     *
+     * @param callable $handler
+     * @return static
+     */
+    public function after(callable $handler): static;
+    
+    /**
      * Emit the specified response.
      *
      * @param ResponseInterface $response
