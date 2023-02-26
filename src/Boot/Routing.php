@@ -22,9 +22,13 @@ use Tobento\Service\Routing\Middleware\MethodOverride;
 use Tobento\Service\Routing\Middleware\PreRouting;
 use Tobento\Service\Routing\RouterInterface;
 use Tobento\Service\Routing\Router;
+use Tobento\Service\Routing\RouteInterface;
+use Tobento\Service\Routing\RouteGroupInterface;
+use Tobento\Service\Routing\RouteResourceInterface;
 use Tobento\Service\Routing\RequestData;
 use Tobento\Service\Routing\UrlGenerator;
 use Tobento\Service\Routing\UrlInterface;
+use Tobento\Service\Routing\UrlException;
 use Tobento\Service\Routing\RouteFactory;
 use Tobento\Service\Routing\RouteDispatcher;
 use Tobento\Service\Routing\Constrainer\Constrainer;
@@ -40,6 +44,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Closure;
 use Throwable;
 
 /**
@@ -116,18 +121,14 @@ class Routing extends Boot
             
             return $router;
         });
-        
-        $router = $this->app->get(RouterInterface::class);
-        
+
         // App macros.
-        $this->app->addMacro('route', [$router, 'route']);
-        $this->app->addMacro('routeGroup', [$router, 'group']);
-        $this->app->addMacro('routeResource', [$router, 'resource']);
-        $this->app->addMacro('routeMatched', [$router, 'matched']);
-        $this->app->addMacro('routeUrl', function(string $name, array $parameters = []): UrlInterface {
-            return $this->get(RouterInterface::class)->url($name, $parameters);
-        });
-        
+        $this->app->addMacro('route', [$this, 'route']);
+        $this->app->addMacro('routeGroup', [$this, 'group']);
+        $this->app->addMacro('routeResource', [$this, 'resource']);
+        $this->app->addMacro('routeMatched', [$this, 'matched']);
+        $this->app->addMacro('routeUrl', [$this, 'url']);
+
         // Default HttpErrorHandlers for router exceptions.
         // You may change its behaviour with adding handlers with higher priority.
         $this->app->on(HttpErrorHandlersInterface::class, function(HttpErrorHandlersInterface $handlers) {
@@ -161,6 +162,72 @@ class Routing extends Boot
                 return $t;
             });
         });
+    }
+
+    /**
+     * Create a new Route.
+     * 
+     * @param string $method The method such as 'GET'
+     * @param string $uri The route uri such as 'foo/{id}'
+     * @param mixed $handler The handler if route is matching.
+     * @return RouteInterface
+     */
+    public function route(string $method, string $uri, mixed $handler): RouteInterface
+    {
+        return $this->app->get(RouterInterface::class)->route($method, $uri, $handler);
+    }
+    
+    /**
+     * Create a new RouteGroup.
+     * 
+     * @param string $uri The route uri such as 'foo/{id}'
+     * @param Closure $callback
+     * @return RouteGroupInterface
+     */
+    public function group(string $uri, Closure $callback): RouteGroupInterface
+    {
+        return $this->app->get(RouterInterface::class)->group($uri, $callback);
+    }
+    
+    /**
+     * Create a new RouteResource.
+     * 
+     * @param string $name The resource name
+     * @param string $controller The controller
+     * @param string $placeholder The placeholder name for the uri
+     * @return RouteResourceInterface
+     */
+    public function resource(string $name, string $controller, string $placeholder = 'id'): RouteResourceInterface
+    {
+        return $this->app->get(RouterInterface::class)->resource($name, $controller, $placeholder);
+    }
+    
+    /**
+     * Register a matched event listener.
+     *
+     * @param string $routeName The route name or null for any route.
+     * @param callable $callable
+     * @param int $priority The priority. Highest first.
+     * @return void
+     */
+    public function matched(string $routeName, callable $callable, int $priority = 0): void
+    {
+        $this->app->get(RouterInterface::class)->matched($routeName, $callable, $priority);
+    }
+    
+    /**
+     * Create a new Url.
+     *
+     * @param string $name The route name.
+     * @param array $parameters The paramters to build the url.
+     *
+     * @throws UrlException
+     *
+     * @return UrlInterface
+     */    
+    public function url(string $name, array $parameters = []): UrlInterface
+    {
+        return $this->app->get(RouterInterface::class)->url($name, $parameters);
     }
     
     /**
