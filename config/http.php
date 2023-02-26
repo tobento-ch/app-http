@@ -13,14 +13,17 @@ return [
     
     /*
     |--------------------------------------------------------------------------
-    | Application Host
+    | Application Hosts
     |--------------------------------------------------------------------------
     |
-    | Sets the host to use in the application for secure urls.
+    | Sets the valid hosts to use in the application for secure urls.
     |
-    */    
+    */
     
-    'host' => 'localhost',
+	'hosts' => [
+        '',
+        'localhost',
+    ],
     
     /*
     |--------------------------------------------------------------------------
