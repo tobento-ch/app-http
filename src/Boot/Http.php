@@ -117,16 +117,18 @@ class Http extends Boot
                 $psr17Factory, // UploadedFileFactory
                 $psr17Factory  // StreamFactory
             );
-
+            
             $serverRequest = $creator->fromGlobals();
-            
+            $host = $serverRequest->getUri()->getHost();
             $config = $this->app->get(ConfigInterface::class);
+            $validHosts = $config->get('http.hosts', ['', 'localhost']);
+
+            if (!in_array($host, $validHosts)) {
+                $uri = $serverRequest->getUri()->withHost($validHosts[0] ?? 'localhost');
+                return $serverRequest->withUri($uri);
+            }
             
-            // set host for security reason from config.
-            $uri = $serverRequest->getUri()
-                                 ->withHost($config->get('http.host', 'localhost'));
-            
-            return $serverRequest->withUri($uri);
+            return $serverRequest;
         });
         
         // ResponseFactory
@@ -217,4 +219,4 @@ class Http extends Boot
     {
         return $this->app->get(ResponseEmitterInterface::class);
     }    
-}
+} 
