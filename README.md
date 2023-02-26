@@ -26,6 +26,9 @@ Http, routing, middleware and session support for the app.
         - [Session Config](#session-config)
         - [Session Lifecycle](#session-lifecycle)
         - [Session Error Handling](#session-error-handling)
+    - [Area Boot](#area-boot)
+        - [Create And Boot Area](#create-and-boot-area)
+        - [Area Config](#area-config)
 - [Credits](#credits)
 ___
 
@@ -562,6 +565,90 @@ class HttpErrorHandlerBoot extends Boot
 ```
 
 You may check out the [**Middleware Error Handling**](#middleware-error-handling) to handle errors caused by any middleware too.
+
+## Area Boot
+
+The area boot may be used to create complex admin areas and other applications areas. The boots within the area running in its own application.
+
+### Create And Boot Area
+
+First, create your area boot by extending the ```AreaBoot::class```.
+
+```php
+use Tobento\App\Http\AreaBoot;
+
+class BackendBoot extends AreaBoot
+{
+    public const INFO = [
+        'boot' => [
+            'Backend Area',
+        ],
+    ];
+    
+    // Specify your area boots:
+    protected const AREA_BOOT = [
+        \Tobento\App\Boot\App::class,
+        \Tobento\App\Http\Boot\Middleware::class,
+        \Tobento\App\Http\Boot\Routing::class,
+    ];
+    
+    protected const AREA_KEY = 'backend';
+    
+    protected const AREA_SLUG = 'private';
+    
+    // You may set a domain for the routing e.g. api.example.com
+    // If a domain is defined the slug will be ignored.
+    protected const AREA_DOMAIN = '';
+    
+    // You may set a migration to be installed on booting e.g Migration::class
+    protected const MIGRATION = '';
+}
+```
+
+Next, boot your area:
+
+```php
+use Tobento\App\AppFactory;
+
+// Create the app
+$app = (new AppFactory())->createApp();
+
+// Adding boots
+$app->boot(BackendBoot::class);
+
+// Run the app
+$app->run();
+```
+
+You may also boot your area boot by another boot:
+
+```php
+use Tobento\App\Boot;
+
+class ShopBoot extends Boot
+{
+    public const INFO = [
+        'boot' => [
+            'Shop',
+        ],
+    ];
+
+    public const BOOT = [
+        BackendBoot::class,
+        FrontendBoot::class,
+    ];
+    
+    public function boot(BackendBoot $backend, FrontendBoot $frontend): void
+    {
+        $backend->addBoot(ShopBackend::class);
+        $frontend->addBoot(ShopFrontend::class);
+    }
+}
+```
+
+### Area Config
+
+You may copy ```config/area.php``` to ```app/config/``` directory and rename it to your specified ```AREA_KEY``` contstant. You may do so by using a migration.
 
 # Credits
 
