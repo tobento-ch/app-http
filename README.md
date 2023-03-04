@@ -20,7 +20,6 @@ Http, routing, middleware and session support for the app.
         - [Middleware Error Handling](#middleware-error-handling)    
     - [Routing Boot](#routing-boot)
         - [Routing via Boot](#routing-via-boot)
-        - [Routing And Middleware](#routing-and-middleware)
         - [Router Error Handling](#router-error-handling)
     - [Session Boot](#session-boot)
         - [Session Config](#session-config)
@@ -296,6 +295,7 @@ Check out the [**Throwable Handlers**](https://github.com/tobento-ch/service-err
 
 The routing boot does the following:
 
+* boots http and middleware boot
 * [*RouterInterface*](https://github.com/tobento-ch/service-routing) implementation
 * adds routing macro
 * adds http error handler for routing exceptions
@@ -380,35 +380,6 @@ $app = (new AppFactory())->createApp();
 
 // Adding boots
 $app->boot(RoutesBoot::class);
-
-// Run the app
-$app->run();
-```
-
-### Routing And Middleware
-
-> :warning: **If you want to use routing and middleware it is important to add the routing boot after the middleware boot.**
-
-```php
-use Tobento\App\AppFactory;
-use Tobento\Service\Routing\RouterInterface;
-
-// Create the app
-$app = (new AppFactory())->createApp();
-
-// Adding boots
-$app->boot(\Tobento\App\Http\Boot\Middleware::class);
-// add routing boot after middleware boot:
-$app->boot(\Tobento\App\Http\Boot\Routing::class);
-$app->booting();
-
-// Add middlware for every request:
-$app->middleware(BarMiddleware::class);
-
-// Add to specific route:
-$app->route('GET', 'foo', function() {
-    return ['page' => 'foo'];
-})->middleware(MyMiddleware::class);
 
 // Run the app
 $app->run();
