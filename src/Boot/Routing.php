@@ -15,6 +15,7 @@ namespace Tobento\App\Http\Boot;
 
 use Tobento\App\Boot;
 use Tobento\App\Http\Boot\Http;
+use Tobento\App\Http\Boot\Middleware;
 use Tobento\App\Http\RouteHandler;
 use Tobento\App\Http\HttpErrorHandlersInterface;
 use Tobento\Service\Routing\Middleware\Routing as RoutingMiddleware;
@@ -54,6 +55,7 @@ class Routing extends Boot
 {
     public const INFO = [
         'boot' => [
+            'boots http and middleware boot',
             RouterInterface::class.' implementation',
             'adds routing macro',
             'adds http error handler for routing exceptions',
@@ -66,6 +68,7 @@ class Routing extends Boot
     
     public const BOOT = [
         Http::class,
+        Middleware::class,
     ];
     
     public const REBOOTABLE = ['terminate'];
