@@ -11,16 +11,13 @@ Http, routing, middleware and session support for the app.
     - [Http Boot](#http-boot)
         - [Http Config](#http-config)
         - [Request And Response](#request-and-response)
-        - [Error Handling](#error-handling)
         - [Swap PSR-7 And PSR-17 Implementation](#swap-psr-7-and-psr-17-implementation)
     - [Requester And Responser Boot](#requester-and-responser-boot)
     - [Middleware Boot](#middleware-boot)
         - [Add Middleware via Boot](#add-middleware-via-boot)
         - [Middleware Aliases](#middleware-aliases)
-        - [Middleware Error Handling](#middleware-error-handling)    
     - [Routing Boot](#routing-boot)
         - [Routing via Boot](#routing-via-boot)
-        - [Router Error Handling](#router-error-handling)
     - [Session Boot](#session-boot)
         - [Session Config](#session-config)
         - [Session Lifecycle](#session-lifecycle)
@@ -28,6 +25,9 @@ Http, routing, middleware and session support for the app.
     - [Area Boot](#area-boot)
         - [Create And Boot Area](#create-and-boot-area)
         - [Area Config](#area-config)
+    - [Error Handler Boot](#error-handler-boot)
+        - [Render Exception Views](#render-exception-views)
+        - [Handle Other Exceptions](#handle-other-exceptions)
 - [Credits](#credits)
 ___
 
@@ -121,12 +121,6 @@ $app->run();
 ```
 
 Check out the [**Uri Service**](https://github.com/tobento-ch/service-uri) to learn more about the base and current uri.
-
-### Error Handling
-
-Check out the [**Router Error Handling**](#router-error-handling) to handle errors caused by the router.
-
-Check out the [**Middleware Error Handling**](#middleware-error-handling) to handle errors caused by middlewares.
 
 ### Swap PSR-7 And PSR-17 Implementation
 
@@ -251,46 +245,6 @@ class MyMiddlewareBoot extends Boot
 }
 ```
 
-### Middleware Error Handling
-
-You may add an error handler for handling exceptions caused by any middleware.
-
-```php
-use Tobento\App\Boot;
-use Tobento\App\Http\HttpErrorHandlersInterface;
-use Psr\Http\Message\ResponseFactoryInterface;
-use Throwable;
-
-class HttpErrorHandlerBoot extends Boot
-{
-    public const BOOT = [
-        // you may ensure the http boot.
-        \Tobento\App\Http\Boot\Http::class,
-    ];
-    
-    public function boot()
-    {
-        $this->app->on(HttpErrorHandlersInterface::class, function(HttpErrorHandlersInterface $handlers) {
-
-            $handlers->add(function(Throwable $t) {
-                
-                $responseFactory = $this->app->get(ResponseFactoryInterface::class);
-                
-                if ($t instanceof SomeMiddlewareException) {
-                    $response = $responseFactory->createResponse(404);
-                    $response->getBody()->write('Exception handled');
-                    return $response;
-                }
-                
-                return $t;
-            })->priority(2000); // you might add a priority.
-        });
-    }
-}
-```
-
-Check out the [**Throwable Handlers**](https://github.com/tobento-ch/service-error-handler#throwable-handlers) to learn more about handlers in general.
-
 ## Routing Boot
 
 The routing boot does the following:
@@ -385,65 +339,6 @@ $app->boot(RoutesBoot::class);
 $app->run();
 ```
 
-### Router Error Handling
-
-You may add an error handler for handling exceptions caused by the router. Make sure your handler has a higher priority so as to get executed before the default set on the \Tobento\App\Http\Boot\Routing::class.
-
-```php
-use Tobento\App\Boot;
-use Tobento\App\Http\HttpErrorHandlersInterface;
-use Tobento\Service\Routing\RouteNotFoundException;
-use Tobento\Service\Routing\InvalidSignatureException;
-use Tobento\Service\Routing\TranslationException;
-use Psr\Http\Message\ResponseFactoryInterface;
-use Throwable;
-
-class HttpErrorHandlerBoot extends Boot
-{
-    public const BOOT = [
-        // you may ensure the http boot.
-        \Tobento\App\Http\Boot\Http::class,
-    ];
-    
-    public function boot()
-    {
-        $this->app->on(HttpErrorHandlersInterface::class, function(HttpErrorHandlersInterface $handlers) {
-
-            $handlers->add(function(Throwable $t) {
-                
-                $responseFactory = $this->app->get(ResponseFactoryInterface::class);
-                
-                if ($t instanceof RouteNotFoundException) {
-                    
-                    $response = $responseFactory->createResponse(404);
-                    $response->getBody()->write(json_encode([
-                        'statusCode' => 404,
-                        'message' => 'The requested page is not found',
-                    ]));
-                    return $response->withHeader('Content-Type', 'application/json');
-                    
-                } elseif ($t instanceof InvalidSignatureException) {
-                    
-                    $response = $responseFactory->createResponse(403);
-                    $response->getBody()->write(json_encode([
-                        'statusCode' => 403,
-                        'message' => 'The signature of the requested page is invalid',
-                    ]));
-                    return $response->withHeader('Content-Type', 'application/json');
-                    
-                } elseif ($t instanceof TranslationException) {
-                    // ignore
-                }
-                
-                return $t;
-            })->priority(2000); // add higher priority as default which is 1000.
-        });
-    }
-}
-```
-
-Check out the [**Throwable Handlers**](https://github.com/tobento-ch/service-error-handler#throwable-handlers) to learn more about handlers in general.
-
 ## Session Boot
 
 The session boot does the following:
@@ -535,7 +430,9 @@ class HttpErrorHandlerBoot extends Boot
 }
 ```
 
-You may check out the [**Middleware Error Handling**](#middleware-error-handling) to handle errors caused by any middleware too.
+You may handle these exceptions with the [**Error Handler - Handle Other Exceptions**](#handle-other-exceptions) instead.
+
+Check out the [**Throwable Handlers**](https://github.com/tobento-ch/service-error-handler#throwable-handlers) to learn more about handlers in general.
 
 ## Area Boot
 
@@ -620,6 +517,109 @@ class ShopBoot extends Boot
 ### Area Config
 
 You may copy ```config/area.php``` to ```app/config/``` directory and rename it to your specified ```AREA_KEY``` contstant. You may do so by using a migration.
+
+## Error Handler Boot
+
+By default, the error handler will render exceptions in json or plain text format. If you want to render exception views to support html and xml formats check out the [Render Exception Views](#render-exception-views) section.
+
+```php
+// ...
+$app->boot(\Tobento\App\Http\Boot\ErrorHandler::class);
+// ...
+```
+
+It handles the following exceptions:
+
+| As Code | Exception |
+| --- | --- |
+| 404 | ```Tobento\Service\Routing\RouteNotFoundException``` |
+| 403 | ```Tobento\Service\Routing\InvalidSignatureException``` |
+| 403 | ```Tobento\Service\Session\SessionValidationException``` |
+| 403 | ```Tobento\Service\Form\InvalidTokenException``` |
+| 500 | Any other not handled before |
+
+### Render Exception Views
+
+In order to render exceptions in html or xml format, the ```ViewInterface::class``` must be available within the app. You might install the [App View](https://github.com/tobento-ch/app-view) bundle to do or just implement the ```ViewInterface::class```:
+
+```
+composer require tobento/service-view
+```
+
+```php
+use Tobento\Service\View;
+use Tobento\Service\Dir\Dirs;
+use Tobento\Service\Dir\Dir;
+
+// ...
+$app->set(View\ViewInterface::class, function() {
+    return new View\View(
+        new View\PhpRenderer(
+            new Dirs(
+                new Dir('home/private/views/'),
+            )
+        ),
+        new View\Data(),
+        new View\Assets('home/public/src/', 'https://www.example.com/src/')
+    );
+});
+// ...
+```
+
+It renders the following view if exist:
+
+| View | Description |
+| --- | --- |
+| ```exception/403.php``` | Any specific error with the named code. |
+| ```exception/403.xml.php``` | Any specific error with the named code in xml format. |
+| ```exception/error.php``` | If specific does not exist. |
+| ```exception/error.xml.php``` | If specific does not exist in xml format. |
+
+### Handle Other Exceptions
+
+You might handle other exceptions by just exending the error handler:
+
+```php
+use Tobento\App\Http\Boot\ErrorHandler;
+use Tobento\Service\Requester\RequesterInterface;
+use Tobento\Service\Responser\ResponserInterface;
+use Psr\Http\Message\ResponseInterface;
+use Throwable;
+
+class CustomErrorHandler extends ErrorHandler
+{
+    public function handleThrowable(Throwable $t): Throwable|ResponseInterface
+    {
+        $requester = $this->app->get(RequesterInterface::class);
+        
+        if ($t instanceof SomeException) {
+            return $requester->wantsJson()
+                ? $this->renderJson(code: 404)
+                : $this->renderView(code: 404);
+        }
+        
+        // using the responser:
+        if ($t instanceof SomeOtherException) {
+            $responser = $this->app->get(ResponserInterface::class);
+            
+            return $responser->json(
+                data: ['key' => 'value'],
+                code: 200,
+            );
+        }        
+        
+        return parent::handleThrowable($t);
+    }
+}
+```
+
+And boot your custom error handler instead of the default:
+
+```php
+// ...
+$app->boot(CustomErrorHandler::class);
+// ...
+```
 
 # Credits
 
