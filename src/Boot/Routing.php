@@ -141,25 +141,21 @@ class Routing extends Boot
                 $responseFactory = $this->app->get(ResponseFactoryInterface::class);
                 
                 if ($t instanceof RouteNotFoundException) {
-                    
                     $response = $responseFactory->createResponse(404);
                     $response->getBody()->write(json_encode([
-                        'statusCode' => 404,
-                        'message' => 'The requested page is not found',
+                        'status' => 404,
+                        'message' => '404 | Not Found',
                     ]));
                     return $response->withHeader('Content-Type', 'application/json');
-                    
-                } elseif ($t instanceof InvalidSignatureException) {
-                    
+                }
+                
+                if ($t instanceof InvalidSignatureException) {
                     $response = $responseFactory->createResponse(403);
                     $response->getBody()->write(json_encode([
-                        'statusCode' => 403,
-                        'message' => 'The signature of the requested page is invalid',
+                        'status' => 403,
+                        'message' => '403 | Forbidden',
                     ]));
                     return $response->withHeader('Content-Type', 'application/json');
-                    
-                } elseif ($t instanceof TranslationException) {
-                    // ignore
                 }
                 
                 return $t;
