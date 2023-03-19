@@ -1,0 +1,1 @@
+<error><code><?= $code ?></code><message><?= $message ?></message></error>

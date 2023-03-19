@@ -1,0 +1,1 @@
+<!DOCTYPE html><html><head><title><?= $code ?></title></head><body><?= $message ?></body></html>
