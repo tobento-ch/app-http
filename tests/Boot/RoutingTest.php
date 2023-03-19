@@ -245,7 +245,7 @@ class RoutingTest extends TestCase
         (new TestResponse($app->get(Http::class)->getResponse()))
             ->isContentType('application/json')
             ->isStatusCode(404)
-            ->isBodySame('{"statusCode":404,"message":"The requested page is not found"}');
+            ->isBodySame('{"status":404,"message":"404 | Not Found"}');
     }
     
     public function testInvalidSignatureExceptionIsCatchedByErrorHandlerReturningJsonResponse()
@@ -271,7 +271,7 @@ class RoutingTest extends TestCase
         (new TestResponse($app->get(Http::class)->getResponse()))
             ->isContentType('application/json')
             ->isStatusCode(403)
-            ->isBodySame('{"statusCode":403,"message":"The signature of the requested page is invalid"}');
+            ->isBodySame('{"status":403,"message":"403 | Forbidden"}');
     }
     
     public function testRouteSignature()
