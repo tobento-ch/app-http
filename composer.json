@@ -36,7 +36,7 @@
         "tobento/service-middleware": "^1.0",
         "tobento/service-routing": "^1.0",
         "tobento/service-session": "^1.0",
-        "tobento/service-requester": "^1.0",
+        "tobento/service-requester": "^1.0.1",
         "tobento/service-responser": "^1.0",
         "tobento/service-uri": "^1.0",
         "tobento/service-config": "^1.0",
