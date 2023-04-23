@@ -53,7 +53,7 @@ class RequesterResponser extends Boot
     public function boot(Middleware $middleware): void
     {
         // Requester
-        $this->app->set(RequesterInterface::class, Requester::class);
+        $this->app->set(RequesterInterface::class, Requester::class)->prototype();
         
         // Responser
         $this->app->set(ResponserInterface::class, function() {
