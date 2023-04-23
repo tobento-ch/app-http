@@ -36,9 +36,9 @@
         "tobento/service-middleware": "^1.0",
         "tobento/service-routing": "^1.0",
         "tobento/service-session": "^1.0",
-        "tobento/service-requester": "^1.0.1",
+        "tobento/service-requester": "^1.0.2",
         "tobento/service-responser": "^1.0",
-        "tobento/service-uri": "^1.0",
+        "tobento/service-uri": "^1.0.1",
         "tobento/service-config": "^1.0",
         "tobento/service-migration": "^1.0",
         "tobento/service-error-handler": "^1.0"
@@ -46,7 +46,8 @@
     "require-dev": {
         "phpunit/phpunit": "^9.5",
         "vimeo/psalm": "^4.0",
-        "tobento/service-view": "^1.0"
+        "tobento/service-view": "^1.0",
+        "tobento/service-form": "^1.0"
     },
     "autoload": {
         "psr-4": {
