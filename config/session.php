@@ -35,13 +35,19 @@ return [
     
     /*
     |--------------------------------------------------------------------------
-    | Session Middleware
+    | Session Specific Middlewares
     |--------------------------------------------------------------------------
     |
-    | Specify the session middleware used to start and save session.
+    | The middlewares.
     |
     */
     
-    'middleware' => \Tobento\Service\Session\Middleware\Session::class,
-    
+    'middlewares' => [
+        
+        // The session middleware used to start and save session.
+        \Tobento\Service\Session\Middleware\Session::class,
+        
+        \Tobento\App\Http\Middleware\PreviousUriSession::class,
+    ],
+
 ];
