@@ -23,6 +23,7 @@ use Tobento\App\Http\HttpErrorHandlersInterface;
 use Tobento\Service\Filesystem\Dir;
 use Tobento\Service\Uri\BaseUriInterface;
 use Tobento\Service\Uri\CurrentUriInterface;
+use Tobento\Service\Uri\PreviousUriInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -90,6 +91,11 @@ class HttpTest extends TestCase
         $this->assertInstanceof(
             CurrentUriInterface::class,
             $app->get(CurrentUriInterface::class)
+        );
+        
+        $this->assertInstanceof(
+            PreviousUriInterface::class,
+            $app->get(PreviousUriInterface::class)
         );
 
         // PSR-17
