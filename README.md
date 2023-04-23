@@ -94,6 +94,7 @@ use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
 use Tobento\Service\Uri\BaseUriInterface;
 use Tobento\Service\Uri\CurrentUriInterface;
+use Tobento\Service\Uri\PreviousUriInterface;
 
 // Create the app
 $app = (new AppFactory())->createApp();
@@ -109,6 +110,8 @@ $response = $app->get(ResponseInterface::class);
 // returns UriInterface
 $baseUri = $app->get(BaseUriInterface::class);
 $currentUri = $app->get(CurrentUriInterface::class);
+$previousUri = $app->get(PreviousUriInterface::class);
+// Session Boot is needed, otherwise it is always same as base uri.
 
 // PSR-17
 $responseFactory = $app->get(ResponseFactoryInterface::class);
