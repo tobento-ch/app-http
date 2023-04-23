@@ -14,19 +14,20 @@ declare(strict_types=1);
 namespace Tobento\App\Http\Boot;
 
 use Tobento\App\Boot;
+use Tobento\App\Boot\Config;
 use Tobento\App\Http\HttpErrorHandlersInterface;
 use Tobento\App\Http\HttpErrorHandlers;
 use Tobento\App\Http\ResponseEmitterInterface;
 use Tobento\App\Http\ResponseEmitter;
 use Tobento\App\Migration\Boot\Migration;
 use Tobento\Service\ErrorHandler\AutowiringThrowableHandlerFactory;
-use Tobento\Service\Config\ConfigInterface;
-use Tobento\Service\Config\ConfigLoadException;
 use Tobento\Service\Uri\BaseUriInterface;
 use Tobento\Service\Uri\BaseUri;
 use Tobento\Service\Uri\BasePathResolver;
 use Tobento\Service\Uri\CurrentUriInterface;
 use Tobento\Service\Uri\CurrentUri;
+use Tobento\Service\Uri\PreviousUriInterface;
+use Tobento\Service\Uri\PreviousUri;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -56,7 +57,7 @@ class Http extends Boot
     ];
     
     public const BOOT = [
-        \Tobento\App\Boot\Config::class,
+        Config::class,
         Migration::class,
     ];
     
@@ -75,22 +76,17 @@ class Http extends Boot
     /**
      * Boot application services.
      *
+     * @param Config $config
      * @param Migration $migration
      * @return void
      */
-    public function boot(Migration $migration): void
+    public function boot(Config $config, Migration $migration): void
     {
         // Install migrations.
         $migration->install(\Tobento\App\Http\Migration\Http::class);
         
-        // Load the app configuration.
-        $config = $this->app->get(ConfigInterface::class);
-        
-        try {
-            $config->load('http.php', 'http');
-        } catch (ConfigLoadException $e) {
-            // ignore
-        }
+        // Load the http configuration.
+        $config = $config->load('http.php', 'http');
         
         // HttpErrorHandlers
         $this->app->set(HttpErrorHandlersInterface::class, function(ContainerInterface $container) {
@@ -107,8 +103,7 @@ class Http extends Boot
         $this->app->set(UriFactoryInterface::class, Psr17Factory::class);
         
         // ServerRequest
-        $this->app->set(ServerRequestInterface::class, function() {
-                
+        $this->app->set(ServerRequestInterface::class, function() use ($config) {
             $psr17Factory = new Psr17Factory();
             
             $creator = new ServerRequestCreator(
@@ -120,14 +115,13 @@ class Http extends Boot
             
             $serverRequest = $creator->fromGlobals();
             $host = $serverRequest->getUri()->getHost();
-            $config = $this->app->get(ConfigInterface::class);
-            $validHosts = $config->get('http.hosts', ['', 'localhost']);
-
+            $validHosts = $config['hosts'] ?? ['', 'localhost'];
+            
             if (!in_array($host, $validHosts)) {
                 $uri = $serverRequest->getUri()->withHost($validHosts[0] ?? 'localhost');
                 return $serverRequest->withUri($uri);
             }
-            
+                        
             return $serverRequest;
         });
         
@@ -170,6 +164,11 @@ class Http extends Boot
             $isHome = rtrim((string) $baseUri, '/') === rtrim((string) $uri, '/');
             
             return new CurrentUri($uri, $isHome);
+        });
+        
+        // PreviousUri
+        $this->app->set(PreviousUriInterface::class, function() {
+            return new PreviousUri($this->app->get(BaseUriInterface::class));
         });
     }
     
@@ -218,5 +217,5 @@ class Http extends Boot
     public function getResponseEmitter(): ResponseEmitterInterface
     {
         return $this->app->get(ResponseEmitterInterface::class);
-    }    
+    }
 } 
