@@ -41,6 +41,8 @@ class ErrorHandler extends Boot
         RequesterResponser::class,
     ];
     
+    protected const HANDLER_PRIORITY = 1500;
+    
     protected const GENERAL_VIEW = 'exception/error';
     
     protected const VIEW = 'exception/%s';
@@ -77,7 +79,7 @@ class ErrorHandler extends Boot
         // You may change its behaviour with adding handlers with higher priority.
         $this->app->on(HttpErrorHandlersInterface::class, function(HttpErrorHandlersInterface $handlers) {
             $handlers->add([$this, 'handleThrowable']);
-        })->priority(1500);
+        })->priority(static::HANDLER_PRIORITY);
     }
     
     /**
