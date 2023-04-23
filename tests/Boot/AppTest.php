@@ -28,6 +28,7 @@ use Tobento\Service\Session\SessionStartException;
 use Tobento\Service\Session\SessionSaveException;
 use Tobento\Service\Responser\ResponserInterface;
 use Tobento\Service\Requester\RequesterInterface;
+use Tobento\Service\Uri\PreviousUriInterface;
 use Tobento\Service\Filesystem\Dir;
 use Tobento\Service\Dir\Dir as ServiceDir;
 use Tobento\Service\Dir\Dirs;
@@ -192,6 +193,57 @@ class AppTest extends TestCase
 
         (new TestResponse($app->get(Http::class)->getResponse()))
             ->isStatusCode(200)
-            ->isBodySame('[]');        
+            ->isBodySame('[]');
+    }
+    
+    public function testRedirectionToPreviousUri()
+    {
+        $app = $this->createApp();
+        
+        $app->on(ServerRequestInterface::class, function() {
+            return (new Psr17Factory())->createServerRequest(
+                method: 'GET',
+                uri: 'http://localhost/foo',
+                serverParams: [
+                    'SCRIPT_NAME' => '/index.php',
+                ],
+            );
+        });
+                
+        $app->booting();
+        
+        $app->route('GET', 'foo', function(ResponserInterface $responser) {
+            return $responser->json(data: [], code: 200);
+        });
+
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(200);
+        
+        // next request: redirect
+        $app = $this->createApp();
+        
+        $app->on(ServerRequestInterface::class, function() {
+            return (new Psr17Factory())->createServerRequest(
+                method: 'GET',
+                uri: 'http://localhost/bar',
+                serverParams: [
+                    'SCRIPT_NAME' => '/index.php',
+                ],
+            );
+        });
+                
+        $app->booting();
+        
+        $app->route('GET', 'bar', function(PreviousUriInterface $uri) {
+            // would be redirect
+            return (string)$uri;
+        });
+
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isBodySame('http://localhost/foo');
     }
 }
