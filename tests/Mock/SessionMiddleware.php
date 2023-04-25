@@ -67,7 +67,7 @@ class SessionMiddleware implements MiddlewareInterface
         $response = $handler->handle($request);
 
         try {
-            $this->session->save();
+            //$this->session->save();
         } catch (SessionSaveException $e) {
             // do nothing for testing
         }
