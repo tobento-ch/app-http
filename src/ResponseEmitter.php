@@ -15,6 +15,7 @@ namespace Tobento\App\Http;
 
 use Laminas\HttpHandlerRunner\Emitter\SapiEmitter;
 use Psr\Http\Message\ResponseInterface;
+use Throwable;
 
 /**
  * ResponseEmitter
@@ -30,6 +31,15 @@ class ResponseEmitter implements ResponseEmitterInterface
      * @var array<int, callable>
      */    
     protected array $afterHandlers = [];
+    
+    /**
+     * Create a new ResponseEmitter.
+     *
+     * @param HttpErrorHandlersInterface $httpErrorHandlers
+     */    
+    public function __construct(
+        protected HttpErrorHandlersInterface $httpErrorHandlers
+    ) {}
     
     /**
      * Add handler before the response is emitted.
@@ -63,14 +73,22 @@ class ResponseEmitter implements ResponseEmitterInterface
      */
     public function emit(ResponseInterface $response): void
     {
-        foreach($this->beforeHandlers as $handler) {
-            call_user_func($handler);
+        try {
+            foreach($this->beforeHandlers as $handler) {
+                $handler($response);
+            }
+        } catch (Throwable $t) {
+            $response = $this->httpErrorHandlers->handleThrowable($t);
+            
+            if (! $response instanceof ResponseInterface) {
+                throw $t;
+            }
         }
         
         (new SapiEmitter())->emit($response);
-        
+                
         foreach($this->afterHandlers as $handler) {
-            call_user_func($handler);
+            $handler();
         }
     }
 }
