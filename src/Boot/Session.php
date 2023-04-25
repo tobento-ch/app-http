@@ -16,8 +16,10 @@ namespace Tobento\App\Http\Boot;
 use Tobento\App\Boot;
 use Tobento\App\Boot\Config;
 use Tobento\App\Http\Boot\Middleware;
+use Tobento\App\Http\ResponseEmitterInterface;
 use Tobento\App\Http\SessionFactory;
 use Tobento\Service\Session\SessionInterface;
+use Tobento\Service\Session\SessionSaveException;
 use Tobento\Service\Uri\PreviousUriInterface;
 use Tobento\Service\Uri\PreviousUri;
 use Psr\Http\Message\UriFactoryInterface;
@@ -60,6 +62,14 @@ class Session extends Boot
             );
             
             return $session;
+        });
+        
+        // Save session in case it is not done by the middleware.
+        // This happens if an Exception is thrown in the middleware process.
+        $this->app->on(ResponseEmitterInterface::class, function(ResponseEmitterInterface $emitter): void {
+            $emitter->before(function() {
+                $this->app->get(SessionInterface::class)->save();
+            });
         });
         
         // Handle previous uri:
