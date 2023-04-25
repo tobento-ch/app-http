@@ -90,7 +90,6 @@ class Http extends Boot
         
         // HttpErrorHandlers
         $this->app->set(HttpErrorHandlersInterface::class, function(ContainerInterface $container) {
-
             return new HttpErrorHandlers(
                 new AutowiringThrowableHandlerFactory($container)
             );
