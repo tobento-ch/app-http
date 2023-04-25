@@ -14,8 +14,10 @@ declare(strict_types=1);
 namespace Tobento\App\Http\Boot;
 
 use Tobento\App\Boot;
+use Tobento\App\Boot\Config;
 use Tobento\App\Http\Boot\RequesterResponser;
 use Tobento\App\Http\HttpErrorHandlersInterface;
+use Tobento\Service\Config\ConfigInterface;
 use Tobento\Service\Requester\RequesterInterface;
 use Tobento\Service\Responser\ResponserInterface;
 use Tobento\Service\Routing\RouteNotFoundException;
@@ -38,6 +40,7 @@ class ErrorHandler extends Boot
     ];
     
     public const BOOT = [
+        Config::class,
         RequesterResponser::class,
     ];
     
@@ -114,6 +117,11 @@ class ErrorHandler extends Boot
             return $requester->wantsJson()
                 ? $this->renderJson(code: 403, messageCode: 419)
                 : $this->renderView(code: 403, messageCode: 419);
+        }
+        
+        // do not handle all other if in debug mode:
+        if ($this->app->get(ConfigInterface::class)->get('app.debug', false)) {
+            return $t;
         }
         
         return $requester->wantsJson()
