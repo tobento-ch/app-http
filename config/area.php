@@ -17,6 +17,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | Must not end with a slash.
+    | You may set the slug to null if a domain is set otherwise
+    | the slug will be used too.
     |
     */
     
@@ -28,7 +30,6 @@ return [
     |--------------------------------------------------------------------------
     |
     | You may set a domain for the routing e.g. api.example.com
-    | If a domain is defined the slug will be ignored.
     |
     */
     
