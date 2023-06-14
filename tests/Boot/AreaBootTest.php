@@ -153,6 +153,7 @@ class AreaBootTest extends TestCase
                 
         $app->on(ConfigInterface::class, function($config) {
             $config->set('backend.domain', 'backend.example.com');
+            $config->set('backend.slug', null);
         });
 
         $app->run();
@@ -168,7 +169,61 @@ class AreaBootTest extends TestCase
             'foo',
             $backend->app()->get(RouterInterface::class)->getMatchedRoute()?->getName()
         );
-    }    
+    }
+    
+    public function testRoutesAreaWithDomainAndSlug()
+    {
+        $app = $this->createApp();
+        
+        $backend = new BackendBoot($app);
+        $backend->afterBooting(function($backend) {
+            $backend->app()->on(ResponseEmitterInterface::class, ResponseEmitter::class);
+            
+            $backend->app()->on(ServerRequestInterface::class, function() {
+                return (new Psr17Factory())->createServerRequest(
+                    method: 'GET',
+                    uri: 'https://backend.example.com/foo',
+                    serverParams: [],
+                );
+            });
+
+            $backend->booting();
+            
+            $backend->app()->route('GET', 'foo', function() {
+                return 'foo';
+            })->name('foo');
+        });
+        
+        $app->boot($backend);
+        
+        $app->on(ServerRequestInterface::class, function() {
+            $request = (new Psr17Factory())->createServerRequest(
+                method: 'GET',
+                uri: 'https://backend.example.com/private/foo',
+                serverParams: [],
+            );
+            
+            return $request;
+        });
+                
+        $app->on(ConfigInterface::class, function($config) {
+            $config->set('backend.domain', 'backend.example.com');
+        });
+
+        $app->run();
+        
+        $this->assertSame('https://backend.example.com/private', (string)$backend->url());
+        
+        $this->assertSame(
+            'backend',
+            $app->get(RouterInterface::class)->getMatchedRoute()?->getName()
+        );
+        
+        $this->assertSame(
+            'foo',
+            $backend->app()->get(RouterInterface::class)->getMatchedRoute()?->getName()
+        );
+    }
     
     public function testHomeRoute()
     {
