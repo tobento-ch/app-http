@@ -28,6 +28,8 @@ use Tobento\Service\Uri\CurrentUriInterface;
 use Tobento\Service\Uri\CurrentUri;
 use Tobento\Service\Uri\PreviousUriInterface;
 use Tobento\Service\Uri\PreviousUri;
+use Tobento\Service\Config\ConfigInterface;
+use Tobento\Service\Routing\DomainsInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -86,7 +88,7 @@ class Http extends Boot
         $migration->install(\Tobento\App\Http\Migration\Http::class);
         
         // Load the http configuration.
-        $config = $config->load('http.php', 'http');
+        $config->load('http.php', 'http');
         
         // HttpErrorHandlers
         $this->app->set(HttpErrorHandlersInterface::class, function(ContainerInterface $container) {
@@ -102,7 +104,7 @@ class Http extends Boot
         $this->app->set(UriFactoryInterface::class, Psr17Factory::class);
         
         // ServerRequest
-        $this->app->set(ServerRequestInterface::class, function() use ($config) {
+        $this->app->set(ServerRequestInterface::class, function() {
             $psr17Factory = new Psr17Factory();
             
             $creator = new ServerRequestCreator(
@@ -114,7 +116,7 @@ class Http extends Boot
             
             $serverRequest = $creator->fromGlobals();
             $host = $serverRequest->getUri()->getHost();
-            $validHosts = $config['hosts'] ?? ['', 'localhost'];
+            $validHosts = $this->getValidHosts();
             
             if (!in_array($host, $validHosts)) {
                 $uri = $serverRequest->getUri()->withHost($validHosts[0] ?? 'localhost');
@@ -216,5 +218,25 @@ class Http extends Boot
     public function getResponseEmitter(): ResponseEmitterInterface
     {
         return $this->app->get(ResponseEmitterInterface::class);
+    }
+    
+    /**
+     * Returns the valid hosts.
+     *
+     * @return array<int, string>
+     */
+    public function getValidHosts(): array
+    {
+        $config = $this->app->get(ConfigInterface::class);
+        
+        $validHosts = $config->get('http.hosts', ['', 'localhost']);
+        
+        if ($this->app->has(DomainsInterface::class)) {
+            $domains = $this->app->get(DomainsInterface::class);
+            
+            $validHosts = array_merge($validHosts, $domains->domains());
+        }
+        
+        return $validHosts;
     }
 } 
