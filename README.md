@@ -18,10 +18,15 @@ Http, routing, middleware and session support for the app.
         - [Middleware Aliases](#middleware-aliases)
     - [Routing Boot](#routing-boot)
         - [Routing via Boot](#routing-via-boot)
+        - [Domain Routing](#domain-routing)
     - [Session Boot](#session-boot)
         - [Session Config](#session-config)
         - [Session Lifecycle](#session-lifecycle)
         - [Session Error Handling](#session-error-handling)
+    - [Cookies Boot](#cookies-boot)
+        - [Cookies Config](#cookies-config)
+        - [Cookies Usage](#cookies-usage)
+        - [Cookies Encryption](#cookies-encryption)
     - [Area Boot](#area-boot)
         - [Create And Boot Area](#create-and-boot-area)
         - [Area Config](#area-config)
@@ -342,6 +347,12 @@ $app->boot(RoutesBoot::class);
 $app->run();
 ```
 
+### Domain Routing
+
+You may specify the domains for routing in the ```app/config/http.php``` file.
+
+Check out the [**Routing Service - Domain Routing**](https://github.com/tobento-ch/service-routing#domain-routing) section to learn more about domain routing.
+
 ## Session Boot
 
 The session boot does the following:
@@ -437,6 +448,168 @@ You may handle these exceptions with the [**Error Handler - Handle Other Excepti
 
 Check out the [**Throwable Handlers**](https://github.com/tobento-ch/service-error-handler#throwable-handlers) to learn more about handlers in general.
 
+## Cookies Boot
+
+The cookies boot does the following:
+
+* implements [*cookie interfaces*](https://github.com/tobento-ch/service-cookie) based on cookies config file
+* adds middleware based on cookies config file
+
+```php
+use Tobento\App\AppFactory;
+use Tobento\Service\Cookie\CookiesFactoryInterface;
+use Tobento\Service\Cookie\CookieFactoryInterface;
+use Tobento\Service\Cookie\CookieValuesFactoryInterface;
+use Tobento\Service\Cookie\CookiesProcessorInterface;
+
+// Create the app
+$app = (new AppFactory())->createApp();
+
+// Adding boots
+$app->boot(\Tobento\App\Http\Boot\Cookies::class);
+$app->booting();
+
+// The following interfaces are available after booting:
+$cookiesFactory = $app->get(CookiesFactoryInterface::class);
+$cookieFactory = $app->get(CookieFactoryInterface::class);
+$cookieValuesFactory = $app->get(CookieValuesFactoryInterface::class);
+$cookiesProcessor = $app->get(CookiesProcessorInterface::class);
+
+// Run the app
+$app->run();
+```
+
+Check out the [**Cookie Service**](https://github.com/tobento-ch/service-cookie) to learn more it.
+
+### Cookies Config
+
+Check out ```app/config/cookies.php``` to change needed values.
+
+### Cookies Usage
+
+**Read and write cookies**
+
+```php
+use Tobento\App\AppFactory;
+use Tobento\Service\Cookie\CookieValuesInterface;
+use Tobento\Service\Cookie\CookiesInterface;
+use Psr\Http\Message\ServerRequestInterface;
+
+// Create the app
+$app = (new AppFactory())->createApp();
+
+// Adding boots
+$app->boot(\Tobento\App\Http\Boot\Routing::class);
+$app->boot(\Tobento\App\Http\Boot\Cookies::class);
+$app->booting();
+
+$app->route('GET', 'bar', function(ServerRequestInterface $request) {
+
+    // read cookies:
+    $cookieValues = $request->getAttribute(CookieValuesInterface::class);
+    
+    $value = $cookieValues->get('foo');
+    
+    // or
+    var_dump($request->getCookieParams());
+    
+    // write cookies:
+    $cookies = $request->getAttribute(CookiesInterface::class);
+    
+    $cookies->add('name', 'value');
+    
+    return ['page' => 'bar'];
+});
+
+// Run the app
+$app->run();
+```
+
+Check out the [**Cookie Values**](https://github.com/tobento-ch/service-cookie#cookie-values) to learn more it.
+
+Check out the [**Cookies**](https://github.com/tobento-ch/service-cookie#cookies) to learn more it.
+
+### Cookies Encryption
+
+First install the app-encryption bundle:
+
+```
+composer require tobento/app-encryption
+```
+
+Then, just boot the ```Encryption::class``` if you want to encrypt and decrypt all cookies values. That's all.
+
+```php
+// ...
+
+$app->boot(\Tobento\App\Encryption\Boot\Encryption::class);
+$app->boot(\Tobento\App\Http\Boot\Cookies::class);
+
+// ...
+```
+
+**Whitelist cookie**
+
+To whitelist a cookie (disable encryption), use the ```CookiesProcessorInterface::class``` after the booting:
+
+```php
+use Tobento\Service\Cookie\CookiesProcessorInterface;
+
+$cookiesProcessor = $app->get(CookiesProcessorInterface::class);
+
+$cookiesProcessor->whitelistCookie(name: 'name');
+
+// or
+$cookiesProcessor->whitelistCookie(name: 'name[foo]');
+$cookiesProcessor->whitelistCookie(name: 'name[bar]');
+```
+
+**Configuration**
+
+The encrypting and decrypting is done with the implemented ```CookiesProcessor::class``` processed by the specified middleware in the ```app/config/cookies.php``` file.
+
+```php
+use Tobento\Service\Cookie;
+use Tobento\Service\Encryption;
+use Psr\Container\ContainerInterface;
+
+return [
+
+    'middlewares' => [
+        Cookie\Middleware\Cookies::class,
+    ],
+
+    'interfaces' => [
+
+        //...
+
+        Cookie\CookiesProcessorInterface::class => Cookie\CookiesProcessor::class,
+
+        // or you may use a specified encrypter only for cookies:
+        Cookie\CookiesProcessorInterface::class => static function(ContainerInterface $c): Cookie\CookiesProcessorInterface {
+
+            $encrypter = null;
+
+            if (
+                $c->has(Encryption\EncryptersInterface::class)
+                && $c->get(Encryption\EncryptersInterface::class)->has('cookies')
+            ) {
+                $encrypter = $c->get(Encryption\EncryptersInterface::class)->get('cookies');
+            }
+
+            return new Cookie\CookiesProcessor(
+                encrypter: $encrypter,
+                whitelistedCookies: [],
+            );
+        },
+    ],
+
+    //...
+];
+```
+
+You may check out the [**App Encryption**](https://github.com/tobento-ch/app-encryption) to learn more about it.
+
 ## Area Boot
 
 The area boot may be used to create complex admin areas and other applications areas. The boots within the area running in its own application.
@@ -468,7 +641,8 @@ class BackendBoot extends AreaBoot
     protected const AREA_SLUG = 'private';
     
     // You may set a domain for the routing e.g. api.example.com
-    // If a domain is defined the slug will be ignored.
+    // In addition, you may the slug to an empty string,
+    // otherwise it gets appended e.g. api.example.com/slug
     protected const AREA_DOMAIN = '';
     
     // You may set a migration to be installed on booting e.g Migration::class
@@ -543,7 +717,7 @@ It handles the following exceptions:
 
 ### Render Exception Views
 
-In order to render exceptions in html or xml format, the ```ViewInterface::class``` must be available within the app. You might install the [App View](https://github.com/tobento-ch/app-view) bundle to do or just implement the ```ViewInterface::class```:
+In order to render exceptions in html or xml format, the ```ViewInterface::class``` must be available within the app. You might install the [App View](https://github.com/tobento-ch/app-view) bundle or just implement the ```ViewInterface::class```:
 
 ```
 composer require tobento/service-view
