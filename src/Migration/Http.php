@@ -43,6 +43,7 @@ class Http implements MigrationInterface
             $this->dirs->get('config') => [
                 realpath(__DIR__.'/../../').'/config/http.php',
                 realpath(__DIR__.'/../../').'/config/session.php',
+                realpath(__DIR__.'/../../').'/config/cookies.php',
             ],
         ];
     }
