@@ -22,6 +22,7 @@ use Tobento\Service\Session\SessionInterface;
 use Tobento\Service\Session\SessionSaveException;
 use Tobento\Service\Uri\PreviousUriInterface;
 use Tobento\Service\Uri\PreviousUri;
+use Tobento\Service\Cookie\CookiesProcessorInterface;
 use Psr\Http\Message\UriFactoryInterface;
 
 /**
@@ -90,5 +91,10 @@ class Session extends Boot
         foreach($config['middlewares'] ?? [] as $mw) {
             $middleware->add($mw, priority: 6000);
         }
+        
+        // whitelist session cookie:
+        $this->app->on(CookiesProcessorInterface::class, function(CookiesProcessorInterface $processor) use ($config) {
+            $processor->whitelistCookie(name: $config['name'] ?? 'sess');
+        });
     }
 }
