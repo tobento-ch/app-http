@@ -26,6 +26,9 @@ use Tobento\Service\Routing\Router;
 use Tobento\Service\Routing\RouteInterface;
 use Tobento\Service\Routing\RouteGroupInterface;
 use Tobento\Service\Routing\RouteResourceInterface;
+use Tobento\Service\Routing\DomainsInterface;
+use Tobento\Service\Routing\Domains;
+use Tobento\Service\Routing\Domain;
 use Tobento\Service\Routing\RequestData;
 use Tobento\Service\Routing\UrlGenerator;
 use Tobento\Service\Routing\UrlInterface;
@@ -81,6 +84,26 @@ class Routing extends Boot
      */
     public function boot(): void
     {
+        $config = $this->app->get(ConfigInterface::class);
+        
+        // Domains
+        $configDomains = $config->get('http.domains', []);
+        
+        if (!empty($configDomains)) {
+            
+            $domains = new Domains();
+            
+            foreach($configDomains as $domain) {
+                $domains->add(new Domain(
+                    key: $domain['key'],
+                    domain: $domain['domain'],
+                    uri: $domain['uri'],
+                ));
+            }
+            
+            $this->app->set(DomainsInterface::class, $domains);
+        }
+        
         // RouterInterface
         $this->app->set(RouterInterface::class, function() {
             
@@ -91,6 +114,13 @@ class Routing extends Boot
                 $baseUri = $this->app->get(BaseUriInterface::class);
             } else {
                 $baseUri = $request->getUri()->withPath('')->withQuery('')->withFragment('');
+            }
+            
+            // domains
+            $domains = null;
+            
+            if ($this->app->has(DomainsInterface::class)) {
+                $domains = $this->app->get(DomainsInterface::class);
             }
 
             $config = $this->app->get(ConfigInterface::class);
@@ -106,7 +136,7 @@ class Routing extends Boot
                     (string)$baseUri,
                     $config->get('http.signature_key', 'a-random-32-character-secret-signature-key'),
                 ),
-                new RouteFactory(),
+                new RouteFactory($domains),
                 new RouteDispatcher($container, new Constrainer()),
                 new RouteHandler($this->app),
                 new MatchedRouteHandler($container),
