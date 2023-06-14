@@ -26,6 +26,7 @@ use Tobento\App\Http\Test\TestResponse;
 use Tobento\Service\Session\SessionInterface;
 use Tobento\Service\Session\SessionStartException;
 use Tobento\Service\Session\SessionSaveException;
+use Tobento\Service\Cookie\CookiesProcessorInterface;
 use Tobento\Service\Filesystem\Dir;
 use Psr\Http\Message\ServerRequestInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -136,5 +137,39 @@ class SessionTest extends TestCase
         (new TestResponse($app->get(Http::class)->getResponse()))
             ->isStatusCode(200)
             ->isBodySame('foo');
+    }
+    
+    public function testSessionCookieIsWhitelisted()
+    {
+        $app = $this->createApp();
+        $app->boot(\Tobento\App\Http\Boot\Middleware::class);
+        $app->boot(\Tobento\App\Http\Boot\Routing::class);        
+        $app->boot(\Tobento\App\Http\Boot\Session::class);
+        $app->boot(\Tobento\App\Http\Boot\Cookies::class);
+        
+        $app->on(ServerRequestInterface::class, function() {
+            return (new Psr17Factory())->createServerRequest(
+                method: 'GET',
+                uri: 'foo',
+                serverParams: [],
+            );
+        });
+        
+        // Replaces session middleware to ignore session start and save exceptions.
+        $app->on(Middleware::class, MiddlewareBoot::class);
+                
+        $app->booting();
+        
+        $app->route('GET', 'foo', function(CookiesProcessorInterface $processor) {
+            
+            $whitelisted = in_array('sess', $processor->whitelistedCookies());
+            return $whitelisted ? 'true' : 'false';
+        });
+
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(200)
+            ->isBodySame('true');
     }
 }
