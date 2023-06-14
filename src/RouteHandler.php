@@ -55,7 +55,7 @@ class RouteHandler implements RouteHandlerInterface
                 return $this->callRouteHandler($route, $request);
             }
             
-            $middlewareDispatcher = $this->app->get(MiddlewareDispatcherInterface::class);
+            $middlewareDispatcher = $this->app->get(MiddlewareDispatcherInterface::class)->new();
             
             $middlewareDispatcher->add(...$route->getParameter('middleware'));
                 
