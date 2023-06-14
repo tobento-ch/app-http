@@ -25,6 +25,7 @@ use Tobento\Service\Routing\UrlInterface;
 use Tobento\Service\Config\ConfigInterface;
 use Tobento\Service\Config\ConfigLoadException;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriFactoryInterface;
 
 /**
  * AreaBoot
@@ -98,7 +99,7 @@ abstract class AreaBoot extends Boot
     {
         if (is_null($this->areaApp)) {
             // Create a new app:
-            $app = (new AppFactory())->createApp(dirs: $this->app->dirs());
+            $app = (new AppFactory())->createApp();
             
             // Bind backend to app.
             $app->set($this::class, $this);
@@ -107,19 +108,22 @@ abstract class AreaBoot extends Boot
             $this->bootAppDirs($app);
             
             // Adjust base uri on router:
-            $app->on(RouterInterface::class, function(RouterInterface $router) {
+            $app->on(RouterInterface::class, function(RouterInterface $router) use ($app) {
                 
                 $slug = $this->areaSlug();
-                
-                if (!is_null($this->areaDomain())) {
-                    $slug = '';
-                }
-                
                 $router->setBaseUri($slug.'/');
                 
                 $urlGenerator = $router->getUrlGenerator();
                 $urlBase = rtrim($urlGenerator->getUrlBase(), '/').'/'.$slug;
                 $urlGenerator->setUrlBase($urlBase);
+                
+                if (!is_null($this->areaDomain())) {
+                    $uriFactory = $app->get(UriFactoryInterface::class);
+                    $uri = $uriFactory->createUri($urlBase)->withHost($this->areaDomain());
+                    $urlGenerator->setUrlBase((string)$uri);
+                } else {
+                    $urlGenerator->setUrlBase($urlBase);
+                }
             });
             
             // Add booting:
@@ -191,7 +195,10 @@ abstract class AreaBoot extends Boot
 
         if ($this->app->has(ConfigInterface::class)) {
             $config = $this->app->get(ConfigInterface::class);
-            $slug = $config->get($this->areaKey().'.slug', $slug);
+            
+            if ($config->has($this->areaKey().'.slug')) {
+                $slug = $config->get($this->areaKey().'.slug', '');
+            }
         }
         
         return $slug;
@@ -208,7 +215,10 @@ abstract class AreaBoot extends Boot
 
         if ($this->app->has(ConfigInterface::class)) {
             $config = $this->app->get(ConfigInterface::class);
-            $domain = $config->get($this->areaKey().'.domain', '');
+            
+            if ($config->has($this->areaKey().'.domain')) {
+                $domain = $config->get($this->areaKey().'.domain', '');
+            }
         }
         
         return empty($domain) ? null : $domain;
@@ -274,34 +284,18 @@ abstract class AreaBoot extends Boot
      */
     protected function routing(RouterInterface $router, ConfigInterface $config): void
     {
-        if (!is_null($domain = $this->areaDomain())) {
-            // we skip slug at all if domain is set:
-            $router->route('*', '{?path*}', [$this, 'routeHandler'])
-                ->name($this->areaKey())
-                ->domain($domain)
-                ->where('path', '[^?]*')
-                ->parameter('area', $this->areaKey());
-            
-            return;
-        }
-        
         $slug = $this->areaSlug();
         
-        if ($slug === '') {
-            $router->route('*', '{?path*}', [$this, 'routeHandler'])
-                ->name($this->areaKey())
-                ->where('path', '[^?]*')
-                ->parameter('area', $this->areaKey());
-            
-            return;
-        }
+        $uri = $slug === '' ? '{?path*}' : $slug.'/{?path*}';
         
-        $uri = $slug.'/{?path*}';
-        
-        $router->route('*', $uri, [$this, 'routeHandler'])
+        $route = $router->route('*', $uri, [$this, 'routeHandler'])
             ->name($this->areaKey())
             ->where('path', '[^?]*')
             ->parameter('area', $this->areaKey());
+        
+        if (!is_null($domain = $this->areaDomain())) {
+            $route->domain($domain);
+        }
     }
 
     /**
@@ -312,6 +306,10 @@ abstract class AreaBoot extends Boot
      */
     protected function bootAppDirs(AppInterface $app): void
     {
+        foreach($this->app->dirs()->all() as $dir) {
+            $app->dirs()->add($dir);
+        }
+        
         if ($this->app->getEnvironment() !== 'production') {
             $app->dirs()->dir(
                 dir: $app->dir('config.'.$this->app->getEnvironment()).'/'.$this->areaKey().'/',
