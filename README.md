@@ -19,6 +19,7 @@ Http, routing, middleware and session support for the app.
     - [Routing Boot](#routing-boot)
         - [Routing via Boot](#routing-via-boot)
         - [Domain Routing](#domain-routing)
+        - [Route Handler](#route-handler)
     - [Session Boot](#session-boot)
         - [Session Config](#session-config)
         - [Session Lifecycle](#session-lifecycle)
@@ -352,6 +353,87 @@ $app->run();
 You may specify the domains for routing in the ```app/config/http.php``` file.
 
 Check out the [**Routing Service - Domain Routing**](https://github.com/tobento-ch/service-routing#domain-routing) section to learn more about domain routing.
+
+### Route Handler
+
+You may add route handlers to interact with the route handling.
+
+Here is some benefits of adding handlers:
+
+* you may cache responses
+* on certain requests you may throw an exception to be later catched by an error handler (e.g. validation)
+* and much more
+
+First, create a route handler:
+
+```php
+use Tobento\App\AppInterface;
+use Tobento\Service\Routing\RouteInterface;
+use Tobento\Service\Routing\RouteHandlerInterface;
+use Tobento\App\Http\Routing\DeclaredHandlerParameters;
+use Tobento\App\Http\Routing\ArgumentsHandlerParameters;
+use Psr\Http\Message\ServerRequestInterface;
+
+final class CustomRouteHandler implements RouteHandlerInterface
+{
+    public function __construct(
+        private AppInterface $app
+    ) {}
+    
+    /**
+     * Handles the route.
+     *
+     * @param RouteInterface $route
+     * @param null|ServerRequestInterface $request
+     * @return mixed The return value of the handler called.
+     */
+    public function handle(RouteInterface $route, null|ServerRequestInterface $request = null): mixed
+    {
+        // You may interfere with the arguments for the route handler to be called:
+        $arguments = $route->getParameter('_arguments');
+        
+        var_dump($arguments instanceof ArgumentsHandlerParameters);
+        // bool(true)
+        
+        // You may use the declared route handler parameters:
+        $declared = $route->getParameter('_declared');
+        
+        var_dump($declared instanceof DeclaredHandlerParameters);
+        // bool(true)
+        
+        // Let further handlers handle it:
+        return [$route, $request];
+        
+        // Or prevent further handlers from being called
+        // and returning the route handler result:
+        $result = $this->app->call($route->getHandler(), $arguments->getParameters());
+        
+        return [$route, $request, $result];
+    }
+}
+```
+
+Finally, add the route handler:
+
+```php
+use Tobento\App\Http\Routing\RouteHandlerInterface;
+
+// Create the app
+$app = (new AppFactory())->createApp();
+
+// Adding boots:
+$app->boot(\Tobento\App\Http\Boot\Routing::class);
+
+// Add route handler using the app on method:
+$app->on(RouteHandlerInterface::class, function(RouteHandlerInterface $handler) {
+    $handler->addHandler(CustomRouteHandler::class);
+})->priority(1500);
+
+// Run the app
+$app->run();
+```
+
+The only handler added is the ```Tobento\App\Http\Routing\RequestRouteHandler::class``` with a priority of ```1000```.
 
 ## Session Boot
 
