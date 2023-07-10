@@ -17,15 +17,21 @@ use PHPUnit\Framework\TestCase;
 use Tobento\App\AppInterface;
 use Tobento\App\Http\Boot\Http;
 use Tobento\App\Http\ResponseEmitterInterface;
+use Tobento\App\Http\Routing\RouteHandlerInterface;
 use Tobento\App\Http\Test\TestResponse;
 use Tobento\App\Http\Test\Mock\ResponseEmitter;
 use Tobento\App\Http\Test\Mock\ProductsResource;
 use Tobento\App\Http\Test\Mock\RoutesBoot;
+use Tobento\App\Http\Test\Mock\ControllerRequestAttribute;
+use Tobento\App\Http\Test\Mock\ParamsRouteHandler;
+use Tobento\App\Http\Test\Mock\ReturnsResultRouteHandler;
 use Tobento\App\AppFactory;
 use Tobento\Service\Filesystem\Dir;
 use Tobento\Service\Routing\RouterInterface;
 use Tobento\Service\Routing\RouteGroupInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
 
 /**
@@ -362,4 +368,121 @@ class RoutingTest extends TestCase
             ->isStatusCode(200)
             ->isBodySame('bar');
     }
+    
+    public function testRequestIsSameOnHandlerCall()
+    {
+        $app = $this->createApp();
+        
+        $app->on(ServerRequestInterface::class, function() {
+            return (new Psr17Factory())->createServerRequest(
+                method: 'GET',
+                uri: 'foo',
+                serverParams: [],
+            );
+        });
+
+        $app->booting();
+        
+        $app->route('GET', 'foo', function(ServerRequestInterface $request) {
+            return $request->getAttribute('name');
+        })->middleware(function(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
+            $request = $request->withAttribute('name', 'value');
+            return $handler->handle($request);
+        });
+
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(200)
+            ->isBodySame('value');
+    }
+    
+    public function testRequestIsSameOnHandlerConstruct()
+    {
+        $app = $this->createApp();
+        
+        $app->on(ServerRequestInterface::class, function() {
+            return (new Psr17Factory())->createServerRequest(
+                method: 'GET',
+                uri: 'foo',
+                serverParams: [],
+            );
+        });
+
+        $app->booting();
+        
+        $app->route('GET', 'foo', ControllerRequestAttribute::class)
+            ->middleware(function(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
+                $request = $request->withAttribute('name', 'value');
+                return $handler->handle($request);
+            });
+
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(200)
+            ->isBodySame('value');
+    }
+    
+    public function testParamsRouteHandler()
+    {
+        $app = $this->createApp();
+        
+        $app->on(ServerRequestInterface::class, function() {
+            return (new Psr17Factory())->createServerRequest(
+                method: 'GET',
+                uri: 'foo',
+                serverParams: [],
+            );
+        });
+
+        $app->on(RouteHandlerInterface::class, function(RouteHandlerInterface $handler) {
+            $handler->addHandler(ParamsRouteHandler::class);
+        })->priority(1500);
+        
+        $app->booting();
+        
+        $app->route('GET', 'foo', function(ServerRequestInterface $request) {
+            return [
+                $request->getAttribute('_arguments'),
+                $request->getAttribute('_declared'),
+            ];
+        });
+
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(200)
+            ->isBodySame('[true,true]');
+    }
+    
+    public function testRouteHandlerReturnsResult()
+    {
+        $app = $this->createApp();
+        
+        $app->on(ServerRequestInterface::class, function() {
+            return (new Psr17Factory())->createServerRequest(
+                method: 'GET',
+                uri: 'foo',
+                serverParams: [],
+            );
+        });
+
+        $app->on(RouteHandlerInterface::class, function(RouteHandlerInterface $handler) {
+            $handler->addHandler(ReturnsResultRouteHandler::class);
+        });
+        
+        $app->booting();
+        
+        // int $request for test request handler not injecting request object
+        $app->route('GET', 'foo', function(int $request) {
+            return 'foo';
+        });
+
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(200)
+            ->isBodySame('result');
+    }    
 }
