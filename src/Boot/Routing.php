@@ -16,7 +16,9 @@ namespace Tobento\App\Http\Boot;
 use Tobento\App\Boot;
 use Tobento\App\Http\Boot\Http;
 use Tobento\App\Http\Boot\Middleware;
-use Tobento\App\Http\RouteHandler;
+use Tobento\App\Http\Routing\RouteHandlerInterface;
+use Tobento\App\Http\Routing\RouteHandler;
+use Tobento\App\Http\Routing\RequestRouteHandler;
 use Tobento\App\Http\HttpErrorHandlersInterface;
 use Tobento\Service\Routing\Middleware\Routing as RoutingMiddleware;
 use Tobento\Service\Routing\Middleware\MethodOverride;
@@ -104,6 +106,14 @@ class Routing extends Boot
             $this->app->set(DomainsInterface::class, $domains);
         }
         
+        $this->app->set(RouteHandlerInterface::class, RouteHandler::class);
+        
+        // Add RequestRouteHandler with the app on method so that other
+        // can use the priority for the order:
+        $this->app->on(RouteHandlerInterface::class, function(RouteHandlerInterface $handler) {
+            $handler->addHandler(RequestRouteHandler::class);
+        })->priority(1000);
+        
         // RouterInterface
         $this->app->set(RouterInterface::class, function() {
             
@@ -138,7 +148,7 @@ class Routing extends Boot
                 ),
                 new RouteFactory($domains),
                 new RouteDispatcher($container, new Constrainer()),
-                new RouteHandler($this->app),
+                $this->app->get(RouteHandlerInterface::class),
                 new MatchedRouteHandler($container),
                 new RouteResponseParser(),
             );
