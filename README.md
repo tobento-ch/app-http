@@ -34,6 +34,7 @@ Http, routing, middleware and session support for the app.
     - [Error Handler Boot](#error-handler-boot)
         - [Render Exception Views](#render-exception-views)
         - [Handle Other Exceptions](#handle-other-exceptions)
+        - [Prioritize Error Handler](#prioritize-error-handler)
 - [Credits](#credits)
 ___
 
@@ -877,6 +878,63 @@ And boot your custom error handler instead of the default:
 ```php
 // ...
 $app->boot(CustomErrorHandler::class);
+// ...
+```
+
+### Prioritize Error Handler
+
+You may create an error handler and use the ```HANDLER_PRIORITY``` constant to define a priority.
+
+The default priority is ```1500```, higher gets handled first.
+
+```php
+use Tobento\App\Http\Boot\ErrorHandler;
+use Tobento\Service\Requester\RequesterInterface;
+use Tobento\Service\Responser\ResponserInterface;
+use Psr\Http\Message\ResponseInterface;
+use Throwable;
+
+class PrioritizedErrorHandler extends ErrorHandler
+{
+    protected const HANDLER_PRIORITY = 5000;
+    
+    public function handleThrowable(Throwable $t): Throwable|ResponseInterface
+    {
+        $requester = $this->app->get(RequesterInterface::class);
+        
+        if ($t instanceof SomeException) {
+            return $requester->wantsJson()
+                ? $this->renderJson(code: 404)
+                : $this->renderView(code: 404);
+        }
+        
+        // using the responser:
+        if ($t instanceof SomeOtherException) {
+            $responser = $this->app->get(ResponserInterface::class);
+            
+            return $responser->json(
+                data: ['key' => 'value'],
+                code: 200,
+            );
+        }        
+        
+        // return throwable to let other handler handle it:
+        return $t;
+    }
+}
+```
+
+And boot your error handler:
+
+```php
+// ...
+$app->boot(PrioritizedErrorHandler::class);
+
+$app->boot(DefaultErrorHandler::class);
+
+// you could boot it after the default,
+// it gets called first if priority is higher as default:
+$app->boot(PrioritizedErrorHandler::class);
 // ...
 ```
 
