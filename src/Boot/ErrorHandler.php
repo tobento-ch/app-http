@@ -109,14 +109,14 @@ class ErrorHandler extends Boot
         
         if ($t instanceof SessionValidationException) {
             return $requester->wantsJson()
-                ? $this->renderJson(code: 403, messageCode: 419)
-                : $this->renderView(code: 403, messageCode: 419);
+                ? $this->renderJson(code: 403, message: $this->getMessage(419))
+                : $this->renderView(code: 403, message: $this->getMessage(419));
         }
         
         if ($t instanceof InvalidTokenException) {
             return $requester->wantsJson()
-                ? $this->renderJson(code: 403, messageCode: 419)
-                : $this->renderView(code: 403, messageCode: 419);
+                ? $this->renderJson(code: 403, message: $this->getMessage(419))
+                : $this->renderView(code: 403, message: $this->getMessage(419));
         }
         
         // do not handle all other if in debug mode:
@@ -125,23 +125,23 @@ class ErrorHandler extends Boot
         }
         
         return $requester->wantsJson()
-            ? $this->renderJson(code: 500, messageCode: 0)
-            : $this->renderView(code: 500, messageCode: 0);
+            ? $this->renderJson(code: 500)
+            : $this->renderView(code: 500);
     }
 
     /**
      * Returns the rendered json response for the specified code.
      *
      * @param int $code
-     * @param null|int $messageCode
+     * @param null|string $message
      * @return ResponseInterface
      */
-    protected function renderJson(int $code, null|int $messageCode = null): ResponseInterface
+    protected function renderJson(int $code, null|string $message = null): ResponseInterface
     {
         return $this->app->get(ResponserInterface::class)->json(
             data: [
                 'status' => $code,
-                'message' => $this->getMessage(code: $messageCode ?: $code),
+                'message' => $message ?? $this->getMessage(code: $code),
             ],
             code: $code,
         );
@@ -151,18 +151,20 @@ class ErrorHandler extends Boot
      * Returns the rendered view response for the specified code.
      *
      * @param int $code
-     * @param null|int $messageCode
+     * @param null|string $message
      * @return ResponseInterface
      */
-    protected function renderView(int $code, null|int $messageCode = null): ResponseInterface
+    protected function renderView(int $code, null|string $message = null): ResponseInterface
     {
         $responser = $this->app->get(ResponserInterface::class);
         
         [$view, $contentType] = $this->determineView(code: $code);
         
+        $message = $message ?? $this->getMessage(code: $code);
+        
         if (is_null($view)) {
             return $responser->html(
-                html: $this->getMessage(code: $messageCode ?: $code),
+                html: $message,
                 code: $code,
                 contentType: 'text/plain; charset=utf-8',
             );
@@ -172,7 +174,7 @@ class ErrorHandler extends Boot
             view: $view,
             data: [
                 'code' => $code,
-                'message' => $this->getMessage(code: $messageCode ?: $code),
+                'message' => $message,
             ],
         );
         
