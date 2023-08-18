@@ -201,7 +201,7 @@ class ErrorHandlerTest extends TestCase
         ]);
         
         $app->middleware(function($request, $handler) {
-            throw \Exception();
+            throw new \Exception();
         });
                 
         $app->run();
@@ -221,7 +221,7 @@ class ErrorHandlerTest extends TestCase
         ], accept: 'application/json');
         
         $app->middleware(function($request, $handler) {
-            throw \Exception();
+            throw new \Exception();
         });
                 
         $app->run();
