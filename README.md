@@ -856,6 +856,11 @@ class CustomErrorHandler extends ErrorHandler
             return $requester->wantsJson()
                 ? $this->renderJson(code: 404)
                 : $this->renderView(code: 404);
+            
+            // or with custom message:
+            return $requester->wantsJson()
+                ? $this->renderJson(code: 404, message: 'Custom')
+                : $this->renderView(code: 404, message: 'Custom');
         }
         
         // using the responser:
