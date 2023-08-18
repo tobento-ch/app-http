@@ -138,10 +138,12 @@ class ErrorHandler extends Boot
      */
     protected function renderJson(int $code, null|string $message = null): ResponseInterface
     {
+        $message = !empty($message) ? $message : $this->getMessage(code: $code);
+        
         return $this->app->get(ResponserInterface::class)->json(
             data: [
                 'status' => $code,
-                'message' => $message ?? $this->getMessage(code: $code),
+                'message' => $message,
             ],
             code: $code,
         );
@@ -160,7 +162,7 @@ class ErrorHandler extends Boot
         
         [$view, $contentType] = $this->determineView(code: $code);
         
-        $message = $message ?? $this->getMessage(code: $code);
+        $message = !empty($message) ? $message : $this->getMessage(code: $code);
         
         if (is_null($view)) {
             return $responser->html(
