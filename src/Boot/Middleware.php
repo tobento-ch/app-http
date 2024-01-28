@@ -88,6 +88,10 @@ class Middleware extends Boot
                 return;
             }
             
+            if ($response instanceof Throwable) {
+                throw $response;
+            }
+            
             throw $t;
         }
     }
