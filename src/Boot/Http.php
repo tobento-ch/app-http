@@ -28,6 +28,8 @@ use Tobento\Service\Uri\CurrentUriInterface;
 use Tobento\Service\Uri\CurrentUri;
 use Tobento\Service\Uri\PreviousUriInterface;
 use Tobento\Service\Uri\PreviousUri;
+use Tobento\Service\Uri\AssetUriInterface;
+use Tobento\Service\Uri\AssetUri;
 use Tobento\Service\Config\ConfigInterface;
 use Tobento\Service\Routing\DomainsInterface;
 use Psr\Container\ContainerInterface;
@@ -170,6 +172,11 @@ class Http extends Boot
         // PreviousUri
         $this->app->set(PreviousUriInterface::class, function() {
             return new PreviousUri($this->app->get(BaseUriInterface::class));
+        });
+        
+        // AssetUri
+        $this->app->set(AssetUriInterface::class, function() {
+            return new AssetUri($this->app->get(BaseUriInterface::class));
         });
     }
     
