@@ -46,6 +46,7 @@ use Tobento\Service\Routing\TranslationException;
 use Tobento\Service\Middleware\MiddlewareDispatcherInterface;
 use Tobento\Service\Config\ConfigInterface;
 use Tobento\Service\Uri\BaseUriInterface;
+use Tobento\Service\Console\ConsoleInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -201,6 +202,11 @@ class Routing extends Boot
                 return $t;
             });
         });
+        
+        // console commands:
+        $this->app->on(ConsoleInterface::class, function(ConsoleInterface $console): void {
+            $console->addCommand(\Tobento\App\Http\Console\RouteListCommand::class);
+        });
     }
 
     /**
@@ -325,6 +331,10 @@ class Routing extends Boot
 
             if ($response instanceof ResponseInterface) {
                 return $response;
+            }
+            
+            if ($response instanceof Throwable) {
+                throw $response;
             }
             
             throw $e;
