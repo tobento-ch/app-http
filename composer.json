@@ -50,7 +50,9 @@
         "tobento/service-view": "^1.0",
         "tobento/service-form": "^1.0",
         "tobento/service-collection": "^1.0",
-        "tobento/app-encryption": "^1.0"
+        "tobento/app-encryption": "^1.0",
+        "tobento/app-console": "^1.0.2",
+        "mockery/mockery": "^1.6"
     },
     "autoload": {
         "psr-4": {
@@ -59,7 +61,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tobento\\App\\Http\\Test\\": "tests"
+            "Tobento\\App\\Http\\Test\\": "tests",
+            "Tobento\\Service\\Console\\Test\\": "vendor/tobento/service-console/tests"
         }
     },
     "scripts": {
