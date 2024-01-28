@@ -20,6 +20,7 @@ Http, routing, middleware and session support for the app.
         - [Routing via Boot](#routing-via-boot)
         - [Domain Routing](#domain-routing)
         - [Route Handler](#route-handler)
+        - [Route List Command](#route-list-command)
     - [Session Boot](#session-boot)
         - [Session Config](#session-config)
         - [Session Lifecycle](#session-lifecycle)
@@ -435,6 +436,20 @@ $app->run();
 ```
 
 The only handler added is the ```Tobento\App\Http\Routing\RequestRouteHandler::class``` with a priority of ```1000```.
+
+### Route List Command
+
+If you have installed the [App Console](https://github.com/tobento-ch/app-console) you may run the route:list command providing an overview of all the routes that are defined by your application:
+
+```
+php ap route:list
+```
+
+Displays only specific routes by its name with additional information:
+
+```
+php ap route:list --name=blog.show
+```
 
 ## Session Boot
 
