@@ -66,13 +66,18 @@ class Http implements MigrationInterface
     public function install(): ActionsInterface
     {        
         return new Actions(
-            new FilesCopy($this->files),
+            new FilesCopy(
+                files: $this->files,
+                type: 'config',
+                description: 'Http config files.',
+            ),
             new FileStringReplacer(
                 file: $this->dirs->get('config').'http.php',
                 replace: [
                     '{signature_key}' => base64_encode(random_bytes(32)),
                 ],
-                description: 'signature_key generated.',
+                type: 'config',
+                description: 'signature_key generation.',
             ),
         );
     }
@@ -85,7 +90,11 @@ class Http implements MigrationInterface
     public function uninstall(): ActionsInterface
     {
         return new Actions(
-            new FilesDelete($this->files),
+            new FilesDelete(
+                files: $this->files,
+                type: 'config',
+                description: 'Http config files.',
+            ),
         );
     }
 }
