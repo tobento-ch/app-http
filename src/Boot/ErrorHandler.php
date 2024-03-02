@@ -25,6 +25,7 @@ use Tobento\Service\Routing\InvalidSignatureException;
 use Tobento\Service\Session\SessionValidationException;
 use Tobento\Service\Form\InvalidTokenException;
 use Tobento\Service\View\ViewInterface;
+use Tobento\Service\Translation\TranslatorInterface;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
@@ -134,16 +135,17 @@ class ErrorHandler extends Boot
      *
      * @param int $code
      * @param null|string $message
+     * @param array $parameters Any message parameters
      * @return ResponseInterface
      */
-    protected function renderJson(int $code, null|string $message = null): ResponseInterface
+    protected function renderJson(int $code, null|string $message = null, array $parameters = []): ResponseInterface
     {
         $message = !empty($message) ? $message : $this->getMessage(code: $code);
         
         return $this->app->get(ResponserInterface::class)->json(
             data: [
                 'status' => $code,
-                'message' => $message,
+                'message' => $this->trans($message, $parameters),
             ],
             code: $code,
         );
@@ -154,9 +156,10 @@ class ErrorHandler extends Boot
      *
      * @param int $code
      * @param null|string $message
+     * @param array $parameters Any message parameters
      * @return ResponseInterface
      */
-    protected function renderView(int $code, null|string $message = null): ResponseInterface
+    protected function renderView(int $code, null|string $message = null, array $parameters = []): ResponseInterface
     {
         $responser = $this->app->get(ResponserInterface::class);
         
@@ -166,7 +169,7 @@ class ErrorHandler extends Boot
         
         if (is_null($view)) {
             return $responser->html(
-                html: $message,
+                html: $this->trans($message, $parameters),
                 code: $code,
                 contentType: 'text/plain; charset=utf-8',
             );
@@ -176,7 +179,7 @@ class ErrorHandler extends Boot
             view: $view,
             data: [
                 'code' => $code,
-                'message' => $message,
+                'message' => $this->trans($message, $parameters),
             ],
         );
         
@@ -193,6 +196,22 @@ class ErrorHandler extends Boot
     protected function getMessage(int $code): string
     {
         return static::MESSAGES[$code] ?? static::GENERAL_MESSAGE;
+    }
+    
+    /**
+     * Translate the message.
+     *
+     * @param string $message
+     * @param array $parameters Any message parameters
+     * @return string
+     */
+    protected function trans(string $message, array $parameters = []): string
+    {
+        if ($this->app->has(TranslatorInterface::class)) {
+            return $this->app->get(TranslatorInterface::class)->trans($message, $parameters);
+        }
+        
+        return $message;
     }
     
     /**
