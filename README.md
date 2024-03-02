@@ -171,6 +171,10 @@ Check out the [**Requester Service**](https://github.com/tobento-ch/service-requ
 
 Check out the [**Responser Service**](https://github.com/tobento-ch/service-responser) to learn more about it.
 
+**Responser Messages**
+
+[Messages](https://github.com/tobento-ch/service-responser#messages) will be translated if you have installed the [App Message - Translating Messages](https://github.com/tobento-ch/app-message#translating-messages).
+
 **Added Middleware**
 
 | Class | Description |
@@ -854,6 +858,8 @@ It renders the following view if exist:
 
 You might handle other exceptions by just exending the error handler:
 
+Messages will be translated if you have installed the [App Translation](https://github.com/tobento-ch/app-translation) using uses the ```*``` as resource name. Check out the [Translation Resources](https://github.com/tobento-ch/service-translation#resources) and [Translation Files Resources](https://github.com/tobento-ch/service-translation#files-resources) to learn more about it.
+
 ```php
 use Tobento\App\Http\Boot\ErrorHandler;
 use Tobento\Service\Requester\RequesterInterface;
@@ -876,6 +882,11 @@ class CustomErrorHandler extends ErrorHandler
             return $requester->wantsJson()
                 ? $this->renderJson(code: 404, message: 'Custom')
                 : $this->renderView(code: 404, message: 'Custom');
+                
+            // or with custom message and message parameters:
+            return $requester->wantsJson()
+                ? $this->renderJson(code: 404, message: 'Custom :value', parameters: [':value' => 'foo'])
+                : $this->renderView(code: 404, message: 'Custom :value', parameters: [':value' => 'foo']);   
         }
         
         // using the responser:
