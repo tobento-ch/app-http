@@ -38,6 +38,12 @@ class CustomErrorHandler extends ErrorHandler
                 : $this->renderView(code: 500, message: 'Custom message');
         }
         
+        if ($t instanceof \LogicException) {
+            return $requester->wantsJson()
+                ? $this->renderJson(code: 500, message: 'Message :value', parameters: [':value' => 'foo'])
+                : $this->renderView(code: 500, message: 'Message :value', parameters: [':value' => 'foo']);
+        }
+        
         return parent::handleThrowable($t);
     }
 }
