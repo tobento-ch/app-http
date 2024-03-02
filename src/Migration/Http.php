@@ -26,10 +26,9 @@ use Tobento\Service\Dir\DirsInterface;
  */
 class Http implements MigrationInterface
 {
-    /**
-     * @var array The files.
-     */    
-    protected array $files;
+    protected array $configFiles;
+
+    protected array $transFiles;
     
     /**
      * Create a new Migration.
@@ -39,11 +38,32 @@ class Http implements MigrationInterface
     public function __construct(
         protected DirsInterface $dirs,
     ) {
-        $this->files = [
+        $resources = realpath(__DIR__.'/../../').'/resources/';
+        
+        $this->configFiles = [
             $this->dirs->get('config') => [
-                realpath(__DIR__.'/../../').'/config/http.php',
-                realpath(__DIR__.'/../../').'/config/session.php',
-                realpath(__DIR__.'/../../').'/config/cookies.php',
+                $resources.'config/http.php',
+                $resources.'config/session.php',
+                $resources.'config/cookies.php',
+            ],
+        ];
+        
+        // Add trans dir if not exists:
+        if (! $this->dirs->has('trans')) {
+            $this->dirs->dir(
+                dir: $this->dirs->get('app').'trans/',
+                name: 'trans',
+                group: 'trans',
+                priority: 100,
+            );
+        }
+        
+        $this->transFiles = [
+            $this->dirs->get('trans').'en/' => [
+                $resources.'trans/en/en-http.json',
+            ],
+            $this->dirs->get('trans').'de/' => [
+                $resources.'trans/de/de-http.json',
             ],
         ];
     }
@@ -55,7 +75,7 @@ class Http implements MigrationInterface
      */    
     public function description(): string
     {
-        return 'Http config files.';
+        return 'Http config and translation files.';
     }
         
     /**
@@ -67,9 +87,14 @@ class Http implements MigrationInterface
     {        
         return new Actions(
             new FilesCopy(
-                files: $this->files,
+                files: $this->configFiles,
                 type: 'config',
                 description: 'Http config files.',
+            ),
+            new FilesCopy(
+                files: $this->transFiles,
+                type: 'trans',
+                description: 'Http translation files.',
             ),
             new FileStringReplacer(
                 file: $this->dirs->get('config').'http.php',
@@ -91,9 +116,14 @@ class Http implements MigrationInterface
     {
         return new Actions(
             new FilesDelete(
-                files: $this->files,
+                files: $this->configFiles,
                 type: 'config',
                 description: 'Http config files.',
+            ),
+            new FilesDelete(
+                files: $this->transFiles,
+                type: 'trans',
+                description: 'Http translation files.',
             ),
         );
     }
