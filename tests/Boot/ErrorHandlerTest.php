@@ -22,6 +22,8 @@ use Tobento\App\Http\Boot\Routing;
 use Tobento\App\Http\ResponseEmitterInterface;
 use Tobento\App\Http\Test\TestResponse;
 use Tobento\App\Http\Test\Mock\ResponseEmitter;
+use Tobento\App\Translation\Boot\Translation;
+use Tobento\Service\Translation\TranslatorInterface;
 use Tobento\Service\Session\RemoteAddrValidation;
 use Tobento\Service\Session\SessionValidationException;
 use Tobento\Service\Filesystem\Dir;
@@ -37,6 +39,7 @@ class ErrorHandlerTest extends TestCase
         array $request = [],
         null|string $accept = null,
         bool $deleteDir = true,
+        bool $translation = false,
     ): AppInterface {
         if ($deleteDir) {
             (new Dir())->delete(__DIR__.'/../app/');
@@ -63,6 +66,13 @@ class ErrorHandlerTest extends TestCase
             
             return $serverRequest;
         });
+        
+        if ($translation) {
+            $app->boot(Translation::class);
+            $app->on(TranslatorInterface::class, function (TranslatorInterface $translator) {
+                $translator->setLocale('de');
+            });
+        }
         
         $app->boot(ErrorHandler::class);
         $app->boot(Routing::class);
@@ -230,5 +240,45 @@ class ErrorHandlerTest extends TestCase
             ->isStatusCode(500)
             ->isContentType('application/json')
             ->isBodySame('{"status":500,"message":"500 | Internal Server Error"}');
+    }
+    
+    public function testTranslatesMessage()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => '',
+            'serverParams' => [],
+        ], translation: true);
+        
+        $app->middleware(function($request, $handler) {
+            throw new \Exception();
+        });
+                
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(500)
+            ->isContentType('text/plain; charset=utf-8')
+            ->isBodySame('500 | Interner Serverfehler');
+    }
+    
+    public function testTranslatesMessageJsonResponse()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => '',
+            'serverParams' => [],
+        ], accept: 'application/json', translation: true);
+        
+        $app->middleware(function($request, $handler) {
+            throw new \Exception();
+        });
+                
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(500)
+            ->isContentType('application/json')
+            ->isBodySame('{"status":500,"message":"500 | Interner Serverfehler"}');
     }
 }

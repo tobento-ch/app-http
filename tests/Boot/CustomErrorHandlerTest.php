@@ -22,6 +22,9 @@ use Tobento\App\Http\ResponseEmitterInterface;
 use Tobento\App\Http\Test\TestResponse;
 use Tobento\App\Http\Test\Mock\ResponseEmitter;
 use Tobento\App\Http\Test\Mock\CustomErrorHandler;
+use Tobento\App\Translation\Boot\Translation;
+use Tobento\Service\Translation\TranslatorInterface;
+use Tobento\Service\Translation\Resource;
 use Tobento\Service\Session\RemoteAddrValidation;
 use Tobento\Service\Session\SessionValidationException;
 use Tobento\Service\Filesystem\Dir;
@@ -38,6 +41,7 @@ class CustomErrorHandlerTest extends TestCase
         array $request = [],
         null|string $accept = null,
         bool $deleteDir = true,
+        bool $translation = false,
     ): AppInterface {
         if ($deleteDir) {
             (new Dir())->delete(__DIR__.'/../app/');
@@ -64,6 +68,17 @@ class CustomErrorHandlerTest extends TestCase
             
             return $serverRequest;
         });
+        
+        if ($translation) {
+            $app->boot(Translation::class);
+            $app->on(TranslatorInterface::class, function (TranslatorInterface $translator) {
+                $translator->setLocale('de');
+                
+                $translator->resources()->add(new Resource('*', 'de', [
+                    'Message :value' => 'Nachricht :value',
+                ]));
+            });
+        }
         
         $app->boot(CustomErrorHandler::class);
         $app->boot(Routing::class);
@@ -103,7 +118,7 @@ class CustomErrorHandlerTest extends TestCase
             ->isStatusCode(500)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('Custom message');
-    }    
+    }
     
     public function testAnyExceptionWithMessageJsonResponse()
     {
@@ -123,5 +138,45 @@ class CustomErrorHandlerTest extends TestCase
             ->isStatusCode(500)
             ->isContentType('application/json')
             ->isBodySame('{"status":500,"message":"Custom message"}');
+    }
+    
+    public function testTranslatesMessage()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => '',
+            'serverParams' => [],
+        ], translation: true);
+        
+        $app->middleware(function($request, $handler) {
+            throw new \LogicException();
+        });
+                
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(500)
+            ->isContentType('text/plain; charset=utf-8')
+            ->isBodySame('Nachricht foo');
+    }
+    
+    public function testTranslatesMessageJsonResponse()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => '',
+            'serverParams' => [],
+        ], accept: 'application/json', translation: true);
+        
+        $app->middleware(function($request, $handler) {
+            throw new \LogicException();
+        });
+                
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(500)
+            ->isContentType('application/json')
+            ->isBodySame('{"status":500,"message":"Nachricht foo"}');
     }
 }
