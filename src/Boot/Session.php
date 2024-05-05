@@ -24,6 +24,7 @@ use Tobento\Service\Uri\PreviousUriInterface;
 use Tobento\Service\Uri\PreviousUri;
 use Tobento\Service\Cookie\CookiesProcessorInterface;
 use Psr\Http\Message\UriFactoryInterface;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Session boot.
@@ -68,8 +69,9 @@ class Session extends Boot
         // Save session in case it is not done by the middleware.
         // This happens if an Exception is thrown in the middleware process.
         $this->app->on(ResponseEmitterInterface::class, function(ResponseEmitterInterface $emitter): void {
-            $emitter->before(function() {
+            $emitter->before(function(ResponseInterface $response): ResponseInterface {
                 $this->app->get(SessionInterface::class)->save();
+                return $response;
             });
         });
         
