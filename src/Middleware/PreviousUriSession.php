@@ -61,6 +61,7 @@ class PreviousUriSession implements MiddlewareInterface
             $this->requester->isReading()
             && ! $this->requester->isPrefetch()
             && ! $this->requester->isAjax()
+            && ! $response->hasHeader('X-Exclude-Previous-Uri')
         ) {
             $session->set('_previous_uri', (string)$this->currentUri);
         }
