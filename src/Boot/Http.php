@@ -191,7 +191,11 @@ class Http extends Boot
 
         // Emit response:
         if ($this->terminated === $this->app->getRunCycles()) {
-            $this->getResponseEmitter()->emit($this->getResponse());
+            $response = $this->getResponseEmitter()->emit(
+                response: $this->getResponse(),
+                request: $this->app->get(ServerRequestInterface::class)
+            );
+            $this->setResponse($response);
         }
     }
     
