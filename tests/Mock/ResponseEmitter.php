@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Tobento\App\Http\Test\Mock;
 
 use Tobento\App\Http\ResponseEmitter as DefaultResponseEmitter;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -25,12 +26,15 @@ class ResponseEmitter extends DefaultResponseEmitter
      * Emit the specified response.
      *
      * @param ResponseInterface $response
-     * @return void
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface
      */
-    public function emit(ResponseInterface $response): void
+    public function emit(ResponseInterface $response, ServerRequestInterface $request): ResponseInterface
     {
         foreach($this->beforeHandlers as $handler) {
-            call_user_func($handler);
+            $response = $handler($response, $request);
         }
+        
+        return $response;
     }
 }

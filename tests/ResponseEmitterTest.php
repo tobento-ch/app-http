@@ -22,6 +22,7 @@ use Tobento\Service\Container\Container;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Laminas\HttpHandlerRunner\Exception\EmitterException;
 use Tobento\Service\Collection\Collection;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Exception;
 use Throwable;
@@ -52,22 +53,25 @@ class ResponseEmitterTest extends TestCase
         
         $collection = new Collection();
         
-        $emitter->before(function() use ($collection) {
+        $emitter->before(function(ResponseInterface $response, ServerRequestInterface $request) use ($collection) {
             $collection->add('before', true);
+            return $response;
         });
         
         $emitter->before(function(ResponseInterface $response) use ($collection) {
             $collection->add('before1', true);
+            return $response;
         });
         
-        $emitter->after(function() use ($collection) {
+        $emitter->after(function(ResponseInterface $response) use ($collection) {
             $collection->add('after', true);
         });
 
+        $request = (new Psr17Factory())->createServerRequest(method: 'GET', uri: '/');
         $response = (new Psr17Factory())->createResponse(code: 200);
         
         try {
-            $emitter->emit($response);
+            $emitter->emit($response, $request);
         } catch (EmitterException $e) {
             // headers already sent
         }
@@ -95,14 +99,15 @@ class ResponseEmitterTest extends TestCase
         
         $emitter = new ResponseEmitter($httpErrorHandlers);
         
-        $emitter->before(function() {
+        $emitter->before(function(ResponseInterface $response) {
             throw new Exception('message');
         });
         
+        $request = (new Psr17Factory())->createServerRequest(method: 'GET', uri: '/');
         $response = (new Psr17Factory())->createResponse(code: 200);
         
         try {
-            $emitter->emit($response);
+            $emitter->emit($response, $request);
         } catch (EmitterException $e) {
             // headers already sent
         }

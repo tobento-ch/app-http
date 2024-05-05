@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Tobento\App\Http;
 
 use Tobento\Service\ErrorHandler\ThrowableHandlersInterface;
-
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Closure;
 
@@ -43,7 +43,8 @@ interface ResponseEmitterInterface
      * Emit the specified response.
      *
      * @param ResponseInterface $response
-     * @return void
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface
      */
-    public function emit(ResponseInterface $response): void;
+    public function emit(ResponseInterface $response, ServerRequestInterface $request): ResponseInterface;
 }
