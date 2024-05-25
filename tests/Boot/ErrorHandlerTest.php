@@ -20,6 +20,7 @@ use Tobento\App\Http\Boot\ErrorHandler;
 use Tobento\App\Http\Boot\Http;
 use Tobento\App\Http\Boot\Routing;
 use Tobento\App\Http\ResponseEmitterInterface;
+use Tobento\App\Http\Exception;
 use Tobento\App\Http\Test\TestResponse;
 use Tobento\App\Http\Test\Mock\ResponseEmitter;
 use Tobento\App\Translation\Boot\Translation;
@@ -92,6 +93,172 @@ class ErrorHandlerTest extends TestCase
     public static function tearDownAfterClass(): void
     {
         (new Dir())->delete(__DIR__.'/../app/');
+    }
+    
+    public function testHandlesHttpException()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => 'foo',
+            'serverParams' => [],
+        ]);
+        
+        $app->route('GET', 'foo', function() {
+            throw new Exception\HttpException(statusCode: 404);
+        });
+
+        $app->run();
+        
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(404)
+            ->isContentType('text/plain; charset=utf-8')
+            ->isBodySame('404 | Not Found');
+    }
+    
+    public function testHandlesHttpExceptionJsonResponse()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => 'foo',
+            'serverParams' => [],
+        ], accept: 'application/json');
+        
+        $app->route('GET', 'foo', function() {
+            throw new Exception\HttpException(statusCode: 404);
+        });
+
+        $app->run();
+        
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(404)
+            ->isContentType('application/json')
+            ->isBodySame('{"status":404,"message":"404 | Not Found"}');
+    }    
+    
+    public function testHandlesHttpExceptionWithMessageAndHeaders()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => 'foo',
+            'serverParams' => [],
+        ]);
+        
+        $app->route('GET', 'foo', function() {
+            throw new Exception\HttpException(
+                statusCode: 404,
+                message: 'Custom',
+                headers: ['foo' => 'FOO']
+            );
+        });
+
+        $app->run();
+        
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(404)
+            ->isContentType('text/plain; charset=utf-8')
+            ->isBodySame('Custom')
+            ->hasHeader('foo', 'FOO');
+    }
+
+    public function testHandlesBadRequestException()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => 'foo',
+            'serverParams' => [],
+        ]);
+        
+        $app->route('GET', 'foo', function() {
+            throw new Exception\BadRequestException();
+        });
+
+        $app->run();
+        
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(400)
+            ->isContentType('text/plain; charset=utf-8')
+            ->isBodySame('400 | Bad Request');
+    }
+    
+    public function testHandlesForbiddenException()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => 'foo',
+            'serverParams' => [],
+        ]);
+        
+        $app->route('GET', 'foo', function() {
+            throw new Exception\ForbiddenException();
+        });
+
+        $app->run();
+        
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(403)
+            ->isContentType('text/plain; charset=utf-8')
+            ->isBodySame('403 | Forbidden');
+    }
+    
+    public function testHandlesNotFoundException()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => 'foo',
+            'serverParams' => [],
+        ]);
+        
+        $app->route('GET', 'foo', function() {
+            throw new Exception\NotFoundException();
+        });
+
+        $app->run();
+        
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(404)
+            ->isContentType('text/plain; charset=utf-8')
+            ->isBodySame('404 | Not Found');
+    }
+    
+    public function testHandlesTooManyRequestsException()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => 'foo',
+            'serverParams' => [],
+        ]);
+        
+        $app->route('GET', 'foo', function() {
+            throw new Exception\TooManyRequestsException(retryAfter: 3600);
+        });
+
+        $app->run();
+        
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(429)
+            ->isContentType('text/plain; charset=utf-8')
+            ->isBodySame('429 | Too Many Requests')
+            ->hasHeader('Retry-After', '3600');
+    }
+    
+    public function testHandlesUnauthorizedException()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => 'foo',
+            'serverParams' => [],
+        ]);
+        
+        $app->route('GET', 'foo', function() {
+            throw new Exception\UnauthorizedException();
+        });
+
+        $app->run();
+        
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(401)
+            ->isContentType('text/plain; charset=utf-8')
+            ->isBodySame('401 | Unauthorized');
     }
     
     public function testHandlesRouteNotFoundException()
