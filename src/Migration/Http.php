@@ -43,6 +43,7 @@ class Http implements MigrationInterface
         $this->configFiles = [
             $this->dirs->get('config') => [
                 $resources.'config/http.php',
+                $resources.'config/middleware.php',
                 $resources.'config/session.php',
                 $resources.'config/cookies.php',
             ],
