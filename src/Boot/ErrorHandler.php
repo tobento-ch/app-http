@@ -17,6 +17,7 @@ use Tobento\App\Boot;
 use Tobento\App\Boot\Config;
 use Tobento\App\Http\Boot\RequesterResponser;
 use Tobento\App\Http\HttpErrorHandlersInterface;
+use Tobento\App\Http\Exception\HttpException;
 use Tobento\Service\Config\ConfigInterface;
 use Tobento\Service\Requester\RequesterInterface;
 use Tobento\Service\Responser\ResponserInterface;
@@ -95,6 +96,18 @@ class ErrorHandler extends Boot
     public function handleThrowable(Throwable $t): Throwable|ResponseInterface
     {
         $requester = $this->app->get(RequesterInterface::class);
+        
+        if ($t instanceof HttpException) {
+            $response = $requester->wantsJson()
+                ? $this->renderJson(code: $t->statusCode(), message: $t->getMessage())
+                : $this->renderView(code: $t->statusCode(), message: $t->getMessage());
+            
+            foreach($t->headers() as $name => $value) {
+                $response = $response->withHeader($name, $value);
+            }
+            
+            return $response;
+        }
         
         if ($t instanceof RouteNotFoundException) {
             return $requester->wantsJson()
