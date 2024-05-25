@@ -14,8 +14,13 @@ Http, routing, middleware and session support for the app.
         - [Swap PSR-7 And PSR-17 Implementation](#swap-psr-7-and-psr-17-implementation)
     - [Requester And Responser Boot](#requester-and-responser-boot)
     - [Middleware Boot](#middleware-boot)
+        - [Add Middleware via Config](#add-middleware-via-config)
         - [Add Middleware via Boot](#add-middleware-via-boot)
         - [Middleware Aliases](#middleware-aliases)
+        - [Middleware Groups](#middleware-groups)
+        - [Available Middleware](#available-middleware)
+            - [Previous Uri Session Middleware](#previous-uri-session-middleware)
+            - [Secure Policy Headers Middleware](#secure-policy-headers-middleware)
     - [Routing Boot](#routing-boot)
         - [Routing via Boot](#routing-via-boot)
         - [Domain Routing](#domain-routing)
@@ -33,6 +38,7 @@ Http, routing, middleware and session support for the app.
         - [Create And Boot Area](#create-and-boot-area)
         - [Area Config](#area-config)
     - [Error Handler Boot](#error-handler-boot)
+        - [Http Exceptions](#http-exceptions)
         - [Render Exception Views](#render-exception-views)
         - [Handle Other Exceptions](#handle-other-exceptions)
         - [Prioritize Error Handler](#prioritize-error-handler)
@@ -204,6 +210,11 @@ $app->middlewareAliases([
     'alias' => FooMiddleware::class,
 ]);
 
+// add middleware group using app macro:
+$app->middlewareGroup(name: 'api', middlewares: [
+    Middleware::class,
+]);
+
 // add middleware using app macro:
 $app->middleware(BarMiddleware::class);
 
@@ -212,6 +223,34 @@ $app->run();
 ```
 
 Check out the [**Middleware Service**](https://github.com/tobento-ch/service-middleware) to learn more about the middleware implementation.
+
+### Add Middleware via Config
+
+You can configure middleware in the config file ```app/config/middleware.php``` which are applied to all routes and requests:
+
+```php
+return [
+    // ...
+    'middlewares' => [
+        // priority => middleware
+        
+        // via fully qualified class name:
+        8000 => \Tobento\App\Http\Middleware\SecurePolicyHeaders::class,
+        
+        // with build-in parameters:
+        7900 => [AnotherMiddleware::class, 'name' => 'Sam'],
+        
+        // by alias:
+        7800 => 'aliasedMiddleware',
+        
+        // by group name:
+        7800 => 'groupedMiddlewares',
+        
+        // by class instance:
+        7700 => new SomeMiddleware(),
+    ],
+];
+```
 
 ### Add Middleware via Boot
 
@@ -254,10 +293,123 @@ class MyMiddlewareBoot extends Boot
             'alias' => MyMiddleware::class,
         ]);
         
-        // add by alias.
+        // add by alias:
         $middleware->add('alias');
     }
 }
+```
+
+**Add Aliases via Config**
+
+You can configure middleware aliases in the config file ```app/config/middleware.php```:
+
+```php
+return [
+    // ...
+    'aliases' => [
+        'alias' => MyMiddleware::class,
+    ],
+];
+```
+
+### Middleware Groups
+
+```php
+use Tobento\App\Boot;
+use Tobento\App\Http\Boot\Middleware;
+
+class MyMiddlewareBoot extends Boot
+{
+    public const BOOT = [
+        // you may ensure the middleware boot.
+        Middleware::class,
+    ];
+    
+    public function boot(Middleware $middleware)
+    {
+        $middleware->addGroup(name: 'api', middlewares: [
+            Middleware::class,
+            // with build-in parameters:
+            [AnotherMiddleware::class, 'name' => 'Sam'],
+            // by alias:
+            'aliasedMiddleware',
+            // by class instance:
+            new SomeMiddleware(),
+        ]);
+        
+        // add by group:
+        $middleware->add('api');
+    }
+}
+```
+
+**Add Groups via Config**
+
+You can configure middleware groups in the config file ```app/config/middleware.php```:
+
+```php
+return [
+    // ...
+    'groups' => [
+        'name' => [
+            SomeMiddleware::class,
+        ],
+    ],
+];
+```
+
+### Available Middleware
+
+#### Previous Uri Session Middleware
+
+The ```Tobento\App\Http\Middleware\PreviousUriSession::class``` middleware is automatically added by the [Session Boot](#session-boot) which stores the uri history in the session.
+
+**Get Previous Uri**
+
+```php
+$previousUri = $app->get(PreviousUriInterface::class);
+```
+
+**Exclude From Previous Uri History**
+
+You may exclude a certain uri from the history by adding a ```X-Exclude-Previous-Uri``` header on the response: 
+
+```php
+$response = $response->withHeader('X-Exclude-Prev-Url', '1');
+```
+
+#### Secure Policy Headers Middleware
+
+This middleware will add the following secure policy headers to the response:
+
+* ```Strict-Transport-Security: max-age=31536000; includeSubDomains; preload```
+* ```X-Frame-Options: DENY```
+* ```X-Content-Type-Options: nosniff```
+* ```Referrer-Policy: same-origin```
+* ```Content-Security-Policy: base-uri 'none'; default-src 'self'; script-src 'nonce-***' 'self'; object-src 'none'; style-src 'nonce-***' 'self';```
+
+In the ```app/config/middleware.php``` file:
+
+```php
+'middlewares' => [
+    8000 => \Tobento\App\Http\Middleware\SecurePolicyHeaders::class,
+],
+```
+
+**Using inline scripts and styles**
+
+The middleware will add a ```Content-Security-Policy``` header with a nonce for ```script-src``` and ```style-src```. Therefore, to allow inline scripts or styles you must add the nonce to the html:
+
+If using the [App View](https://github.com/tobento-ch/app-view) bundle, you can retrieve the nonce from the view:
+
+```php
+<style nonce="<?= $view->esc($view->get('cspNonce', '')) ?>">
+    ...
+</style>
+
+<script nonce="<?= $view->esc($view->get('cspNonce', '')) ?>">
+    ...
+</script>
 ```
 
 ## Routing Boot
@@ -807,7 +959,7 @@ $app->boot(\Tobento\App\Http\Boot\ErrorHandler::class);
 // ...
 ```
 
-It handles the following exceptions:
+It handles the following exceptions as well as the [Http Exceptions](#http-exceptions):
 
 | As Code | Exception |
 | --- | --- |
@@ -816,6 +968,37 @@ It handles the following exceptions:
 | 403 | ```Tobento\Service\Session\SessionValidationException``` |
 | 403 | ```Tobento\Service\Form\InvalidTokenException``` |
 | 500 | Any other not handled before |
+
+### Http Exceptions
+
+There are several HTTP exceptions you can throw from your controllers and middleware, which are handled by the default error handler:
+
+| As Code | Exception |
+| --- | --- |
+| any | ```Tobento\App\Http\Exception\HttpException``` |
+| 400 | ```Tobento\App\Http\Exception\BadRequestException``` |
+| 401 | ```Tobento\App\Http\Exception\UnauthorizedException``` |
+| 403 | ```Tobento\App\Http\Exception\ForbiddenException``` |
+| 404 | ```Tobento\App\Http\Exception\NotFoundException``` |
+| 429 | ```Tobento\App\Http\Exception\TooManyRequestsException``` |
+
+**Example:**
+
+```php
+use Tobento\App\Http\Exception\HttpException;
+use Tobento\App\Http\Exception\NotFoundException;
+
+class SomeController
+{
+    public function index()
+    {
+        throw new HttpException(statusCode: 404);
+        
+        // or:
+        throw new NotFoundException();
+    }
+}
+```
 
 ### Render Exception Views
 
