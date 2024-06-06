@@ -19,6 +19,7 @@ use Tobento\App\Http\Boot\Http;
 use Tobento\App\Http\HttpErrorHandlersInterface;
 use Tobento\Service\Middleware\MiddlewareDispatcherInterface;
 use Tobento\Service\Middleware\MiddlewareDispatcher;
+use Tobento\Service\Middleware\MiddlewareFactoryInterface;
 use Tobento\Service\Middleware\AutowiringMiddlewareFactory;
 use Tobento\Service\Middleware\FallbackHandler;
 use Psr\Container\ContainerInterface;
@@ -60,21 +61,22 @@ class Middleware extends Boot
      */
     public function boot(Config $config): void
     {
+        // Load the middleware configuration.
+        $config = $config->load('middleware.php');
+        
+        // Interfaces:
+        $this->app->set(MiddlewareFactoryInterface::class, AutowiringMiddlewareFactory::class)
+            ->with(['replaces' => $config['replace'] ?? []]);
+        
         $this->app->set(
             MiddlewareDispatcherInterface::class,
             static function(ContainerInterface $container) {
                 return new MiddlewareDispatcher(
                     new FallbackHandler($container->get(ResponseInterface::class)),
-                    new AutowiringMiddlewareFactory($container)
+                    $container->get(MiddlewareFactoryInterface::class),
                 );
             }
         );
-        
-        // Load the middleware configuration.
-        $config = $config->load('middleware.php');
-        
-        // Set the middlware to replace:
-        $this->middlewareReplace = $config['replace'] ?? [];
         
         // Adding aliases:
         $this->addAliases($config['aliases'] ?? []);
@@ -135,20 +137,6 @@ class Middleware extends Boot
      */
     public function add(mixed ...$middleware): static
     {
-        if (!empty($this->middlewareReplace)) {
-            foreach($middleware as $key => $m) {
-                $m = is_object($m) ? $m::class : $m;
-
-                if (is_string($m) && array_key_exists($m, $this->middlewareReplace)) {
-                    if (is_null($this->middlewareReplace[$m])) {
-                        unset($middleware[$key]);
-                    } else {
-                        $middleware[$key] = $this->middlewareReplace[$m];
-                    }
-                }
-            }            
-        }
-        
         if (!empty($middleware)) {
             $this->app->get(MiddlewareDispatcherInterface::class)->add(...$middleware);
         }
