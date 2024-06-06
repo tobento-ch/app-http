@@ -59,13 +59,20 @@ return [
     | Replace Middlewares
     |--------------------------------------------------------------------------
     |
-    | You may replace any middleware with another or remove it at all,
-    | when the middleware was added by the middleware boot.
+    | You may replace any middleware with another or remove it at all.
     |
     */
     
     'replace' => [
         //SomeMiddleware::class => ReplaceMiddleware::class,
+        
+        // by class instance:
+        //SomeMiddleware::class => new ReplaceMiddleware(),
+        
+        // with build-in parameters:
+        //SomeMiddleware::class => [ReplaceMiddleware::class, 'name' => 'Sam'],
+        
+        // or remove it at all:
         //AnotherMiddleware::class => null,
     ],
 ];
