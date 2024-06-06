@@ -21,6 +21,7 @@ use Tobento\App\Http\ResponseEmitterInterface;
 use Tobento\App\Http\Test\TestResponse;
 use Tobento\App\Http\Test\Mock\ResponseEmitter;
 use Tobento\Service\Middleware\MiddlewareDispatcherInterface;
+use Tobento\Service\Middleware\MiddlewareFactoryInterface;
 use Tobento\Service\Filesystem\Dir;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -137,37 +138,21 @@ class MiddlewareTest extends TestCase
         );
     }
     
-    public function testMiddlewaresAreReplacedViaConfig()
+    public function testMiddlewaresReplacedConfigAreAdded()
     {
         $app = $this->createApp();
         
         $app->dirs()
             ->dir(realpath(__DIR__.'/../config/'), 'config-dev', group: 'config', priority: 20);
         
-        $app->on(
-            MiddlewareDispatcherInterface::class,
-            function (MiddlewareDispatcherInterface $dispatcher): MiddlewareDispatcherInterface {
-                return $this->createDispatcher($dispatcher);
-            }
-        );
-        
         $app->booting();
-        $app->middleware(\ToReplaceMiddleware::class);
-        $app->middleware(\ToReplaceNullMiddleware::class);
-        
-        $dispatcher = $app->get(MiddlewareDispatcherInterface::class);
         
         $this->assertSame(
             [
-                [
-                    0 => 'Tobento\App\Http\Middleware\SecurePolicyHeaders',
-                    'priority' => 8000,
-                ],
-                [
-                    0 => 'ReplacedMiddleware',
-                ],
+                'ToReplaceMiddleware' => 'ReplacedMiddleware',
+                'ToReplaceNullMiddleware' => null,
             ],
-            $dispatcher->getAddedMiddlewares()
+            $app->get(MiddlewareFactoryInterface::class)->getReplaceMiddlewares()
         );
     }
     
