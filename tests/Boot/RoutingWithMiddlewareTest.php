@@ -106,5 +106,32 @@ class RoutingWithMiddlewareTest extends TestCase
         (new TestResponse($app->get(Http::class)->getResponse()))
             ->isStatusCode(200)
             ->isBodySame('foo');
-    }    
+    }
+    
+    public function testMiddlewareAreReplacedViaConfig()
+    {
+        // If replaced app throws because middleware does not exist:
+        $this->expectException(\Tobento\Service\Booting\BootException::class);
+        $this->expectExceptionMessage('Class (ReplacedMiddleware) not found');
+        
+        $app = $this->createApp();
+        $app->dirs()
+            ->dir(realpath(__DIR__.'/../config/'), 'config-dev', group: 'config', priority: 20);
+        
+        $app->on(ServerRequestInterface::class, function() {
+            return (new Psr17Factory())->createServerRequest(
+                method: 'GET',
+                uri: 'foo',
+                serverParams: [],
+            );
+        });
+
+        $app->booting();
+        
+        $app->route('GET', 'foo', function() {
+            return 'foo';
+        })->middleware(\ToReplaceMiddleware::class);
+
+        $app->run();
+    }
 }
