@@ -33,6 +33,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
+use Mockery;
 
 /**
  * RoutingTest
@@ -208,15 +209,16 @@ class RoutingTest extends TestCase
     {
         $app = $this->createApp();
         
-        $app->on(ServerRequestInterface::class, function() {
+        $httpMock = Mockery::mock(Http::class, [$app])->makePartial();
+        $httpMock->shouldReceive('runningInConsole')->andReturn(false);
+        $app->boot($httpMock);
+        
+        $app->on(ServerRequestInterface::class, function() {            
             return (new Psr17Factory())->createServerRequest(
                 method: 'GET',
                 uri: 'http://localhost/foo/bar/blog',
                 serverParams: [
                     'SCRIPT_NAME' => '/foo/bar/index.php',
-                    //'REQUEST_URI' => '/foo/bar/',
-                    //'SERVER_NAME' => 'tobento.localhost',
-                    //'HTTP_HOST' => 'tobento.localhost'
                 ],
             );
         });
