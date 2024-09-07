@@ -90,7 +90,7 @@ class Http extends Boot
         $migration->install(\Tobento\App\Http\Migration\Http::class);
         
         // Load the http configuration.
-        $config->load('http.php', 'http');
+        $config = $config->load('http.php', 'http');
         
         // HttpErrorHandlers
         $this->app->set(HttpErrorHandlersInterface::class, function(ContainerInterface $container) {
@@ -143,15 +143,21 @@ class Http extends Boot
         });
         
         // BaseUri
-        $this->app->set(BaseUriInterface::class, function() {
+        $this->app->set(BaseUriInterface::class, function() use ($config): BaseUriInterface {
+            
+            if ($this->runningInConsole()) {
+                $url = $config['url'] ?? 'http://localhost';
+                $uriFactory = $this->app->get(UriFactoryInterface::class);
+                return new BaseUri($uriFactory->createUri($url));
+            }
             
             $request = $this->app->get(ServerRequestInterface::class);
-            
-            $uri = $request->getUri()
-                           ->withPath((new BasePathResolver($request))->resolve())
-                           ->withQuery('')
-                           ->withFragment('');
-            
+            $uri = $request
+                ->getUri()
+                ->withPath((new BasePathResolver($request))->resolve())
+                ->withQuery('')
+                ->withFragment('');
+
             return new BaseUri($uri);
         });
         
@@ -249,5 +255,15 @@ class Http extends Boot
         }
         
         return $validHosts;
+    }
+    
+    /**
+     * Determine if the app is running in the console.
+     *
+     * @return bool
+     */
+    public function runningInConsole(): bool
+    {
+        return \PHP_SAPI === 'cli' || \PHP_SAPI === 'phpdbg';
     }
 } 
