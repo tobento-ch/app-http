@@ -20,6 +20,9 @@ use Tobento\App\Http\Boot\Http;
 use Tobento\App\Http\ResponseEmitterInterface;
 use Tobento\App\Http\Test\Mock\ResponseEmitter;
 use Tobento\App\Http\HttpErrorHandlersInterface;
+use Tobento\Service\Console\Command;
+use Tobento\Service\Console\InteractorInterface;
+use Tobento\Service\Console\Test\TestCommand;
 use Tobento\Service\Filesystem\Dir;
 use Tobento\Service\Uri\BaseUriInterface;
 use Tobento\Service\Uri\CurrentUriInterface;
@@ -32,6 +35,7 @@ use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
+use Mockery;
 
 /**
  * HttpTest
@@ -136,6 +140,10 @@ class HttpTest extends TestCase
     {
         $app = $this->createApp();
         
+        $httpMock = Mockery::mock(Http::class, [$app])->makePartial();
+        $httpMock->shouldReceive('runningInConsole')->andReturn(false);
+        $app->boot($httpMock);
+        
         $app->on(ServerRequestInterface::class, function() {
             return (new Psr17Factory())->createServerRequest(
                 method: 'GET',
@@ -207,6 +215,10 @@ class HttpTest extends TestCase
     {
         $app = $this->createApp();
         
+        $httpMock = Mockery::mock(Http::class, [$app])->makePartial();
+        $httpMock->shouldReceive('runningInConsole')->andReturn(false);
+        $app->boot($httpMock);
+        
         $app->on(ServerRequestInterface::class, function() {
             return (new Psr17Factory())->createServerRequest(
                 method: 'GET',
@@ -222,5 +234,23 @@ class HttpTest extends TestCase
         $currentUri = $app->get(CurrentUriInterface::class);
         
         $this->assertTrue($currentUri->isHome());
+    }
+    
+    public function testConfigUrlIsUsedForBaseUriOnConsole()
+    {
+        $app = $this->createApp();
+        $app->booting();
+        
+        $command = (new Command(name: 'mail:send'))
+            ->handle(function(InteractorInterface $io, AppInterface $app): int {
+                $baseUri = $app->get(BaseUriInterface::class);
+                $io->write((string)$baseUri);
+                return Command::SUCCESS;
+            });
+        
+        (new TestCommand(command: $command))
+            ->expectsOutput('http://localhost')
+            ->expectsExitCode(0)
+            ->execute($app->container());
     }
 }
