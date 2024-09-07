@@ -103,7 +103,7 @@ class CookiesTest extends TestCase
         
         (new TestResponse($app->get(Http::class)->getResponse()))
             ->isStatusCode(200)
-            ->hasHeader('Set-Cookie', 'bar=value; Path=/; HttpOnly; SameSite=Lax')
+            ->hasHeader('Set-Cookie', 'bar=value; Path=/; Domain=localhost; HttpOnly; SameSite=Lax')
             ->isBodySame('foo');
     }
     
