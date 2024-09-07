@@ -46,8 +46,20 @@ class RouteListCommand extends AbstractCommand
             foreach($io->option(name: 'name') as $name) {
                 if ($route = $router->getRoute($name)) {
                     $data[$name] = $route->toArray();
-                    $data[$name]['urls']['translated'] = $router->url($name)->translated();
-                    $data[$name]['urls']['domained'] = $router->url($name)->domained();
+                    
+                    $url = $router->url($name);
+                    $domained = $url->domained();
+                    
+                    if (empty($domained)) {
+                        $data[$name]['urls']['default'] = $url->get();
+                        $data[$name]['urls']['translated'] = $url->translated();
+                    } else {
+                        foreach(array_keys($domained) as $domain) {
+                            $url = $url->domain($domain);
+                            $data[$name]['urls'][$domain]['default'] = $url->get();
+                            $data[$name]['urls'][$domain]['translated'] = $url->translated();
+                        }
+                    }
                 }
             }
             
