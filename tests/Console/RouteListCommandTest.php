@@ -101,8 +101,9 @@ class RouteListCommandTest extends TestCase
         $data = [];
         $route = $router->getRoute('blog');
         $data['blog'] = $route->toArray();
+        $data['blog']['urls']['default'] = (string)$router->url('blog');
         $data['blog']['urls']['translated'] = $router->url('blog')->translated();
-        $data['blog']['urls']['domained'] = $router->url('blog')->domained();
+        //$data['blog']['urls']['domained'] = $router->url('blog')->domained();
 
         (new TestCommand(
             command: RouteListCommand::class,
@@ -111,5 +112,55 @@ class RouteListCommandTest extends TestCase
         ->expectsOutput(json_encode($data, JSON_PRETTY_PRINT))
         ->expectsExitCode(0)
         ->execute($container);
-    }    
+    }
+    
+    public function testCommandWithNameOptionUsingDomainedRoute()
+    {
+        $container = new Container();
+        
+        $router = new Router(
+            new RequestData(
+                'GET',
+                '',
+                'example.com',
+            ),
+            new UrlGenerator(
+                'https://example.com/basepath',
+                'a-random-32-character-secret-signature-key',
+            ),
+            new RouteFactory(),
+            new RouteDispatcher($container, new Constrainer()),
+            new RouteHandler($container),
+            new MatchedRouteHandler($container),
+            new RouteResponseParser(),
+        );
+        
+        $router
+            ->get('{?locale}/blog', 'Controller::method')
+            ->name('blog')
+            ->locales(['de', 'en'])
+            ->localeOmit('en')
+            ->domain('example.com');
+        
+        $container->set(RouterInterface::class, $router);
+        
+        $route = $router->getRoute('blog');
+        $url = $router->url('blog');
+        $domained = $url->domained();
+        $data = [];
+        $data['blog'] = $route->toArray();
+        foreach(array_keys($domained) as $domain) {
+            $url = $url->domain($domain);
+            $data['blog']['urls'][$domain]['default'] = (string)$url->get();
+            $data['blog']['urls'][$domain]['translated'] = $url->translated();
+        }
+
+        (new TestCommand(
+            command: RouteListCommand::class,
+            input: ['--name' => ['blog']],
+        ))
+        ->expectsOutput(json_encode($data, JSON_PRETTY_PRINT))
+        ->expectsExitCode(0)
+        ->execute($container);
+    }
 }
