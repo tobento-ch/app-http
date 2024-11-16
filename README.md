@@ -372,7 +372,7 @@ $previousUri = $app->get(PreviousUriInterface::class);
 You may exclude a certain uri from the history by adding a ```X-Exclude-Previous-Uri``` header on the response: 
 
 ```php
-$response = $response->withHeader('X-Exclude-Prev-Url', '1');
+$response = $response->withHeader('X-Exclude-Previous-Url', '1');
 ```
 
 #### Secure Policy Headers Middleware
@@ -383,7 +383,7 @@ This middleware will add the following secure policy headers to the response:
 * ```X-Frame-Options: DENY```
 * ```X-Content-Type-Options: nosniff```
 * ```Referrer-Policy: same-origin```
-* ```Content-Security-Policy: base-uri 'none'; default-src 'self'; script-src 'nonce-***' 'self'; object-src 'none'; style-src 'nonce-***' 'self';```
+* ```Content-Security-Policy: base-uri 'none'; default-src 'self'; img-src 'self' data:; script-src 'nonce-***' 'self'; object-src 'none'; style-src 'nonce-***' 'self';```
 
 In the ```app/config/middleware.php``` file:
 
