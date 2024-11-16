@@ -98,7 +98,7 @@ class SecurePolicyHeaders implements MiddlewareInterface
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
         $response = $response->withHeader(
             'Content-Security-Policy',
-            'base-uri \'none\'; default-src \'self\'; script-src \'nonce-'.$this->nonce.'\' \'self\'; object-src \'none\'; style-src \'nonce-'.$this->nonce.'\' \'self\''
+            'base-uri \'none\'; default-src \'self\'; img-src \'self\' data:; script-src \'nonce-'.$this->nonce.'\' \'self\'; object-src \'none\'; style-src \'nonce-'.$this->nonce.'\' \'self\''
         );
 
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
