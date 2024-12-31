@@ -15,6 +15,7 @@ namespace Tobento\App\Http\Boot;
 
 use Tobento\App\Boot;
 use Tobento\App\Boot\Config;
+use Tobento\App\Boot\Functions;
 use Tobento\App\Http\HttpErrorHandlersInterface;
 use Tobento\App\Http\HttpErrorHandlers;
 use Tobento\App\Http\ResponseEmitterInterface;
@@ -62,6 +63,7 @@ class Http extends Boot
     
     public const BOOT = [
         Config::class,
+        Functions::class,
         Migration::class,
     ];
     
@@ -82,9 +84,10 @@ class Http extends Boot
      *
      * @param Config $config
      * @param Migration $migration
+     * @param Functions $functions
      * @return void
      */
-    public function boot(Config $config, Migration $migration): void
+    public function boot(Config $config, Migration $migration, Functions $functions): void
     {
         // Install migrations.
         $migration->install(\Tobento\App\Http\Migration\Http::class);
@@ -184,6 +187,9 @@ class Http extends Boot
         $this->app->set(AssetUriInterface::class, function() {
             return new AssetUri($this->app->get(BaseUriInterface::class));
         });
+        
+        // Functions:
+        $functions->register(__DIR__.'/../functions.php');
     }
     
     /**
