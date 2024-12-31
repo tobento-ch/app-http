@@ -24,6 +24,7 @@ use Tobento\Service\Console\Command;
 use Tobento\Service\Console\InteractorInterface;
 use Tobento\Service\Console\Test\TestCommand;
 use Tobento\Service\Filesystem\Dir;
+use Tobento\Service\Uri\AssetUriInterface;
 use Tobento\Service\Uri\BaseUriInterface;
 use Tobento\Service\Uri\CurrentUriInterface;
 use Tobento\Service\Uri\PreviousUriInterface;
@@ -36,6 +37,7 @@ use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Mockery;
+use function Tobento\App\Http\{assetUri, baseUri};
 
 /**
  * HttpTest
@@ -93,6 +95,11 @@ class HttpTest extends TestCase
         );
         
         $this->assertInstanceof(
+            AssetUriInterface::class,
+            $app->get(AssetUriInterface::class)
+        );
+        
+        $this->assertInstanceof(
             CurrentUriInterface::class,
             $app->get(CurrentUriInterface::class)
         );
@@ -134,6 +141,15 @@ class HttpTest extends TestCase
             ResponseEmitterInterface::class,
             $app->get(ResponseEmitterInterface::class)
         );
+    }
+    
+    public function testFunctionAreAvailable()
+    {
+        $app = $this->createApp();
+        $app->booting();
+
+        $this->assertInstanceof(BaseUriInterface::class, baseUri());
+        $this->assertInstanceof(AssetUriInterface::class, assetUri());
     }
     
     public function testBaseUriResolvesBasePath()
