@@ -11,6 +11,7 @@ Http, routing, middleware and session support for the app.
     - [Http Boot](#http-boot)
         - [Http Config](#http-config)
         - [Request And Response](#request-and-response)
+        - [Http Functions](#http-functions)
         - [Swap PSR-7 And PSR-17 Implementation](#swap-psr-7-and-psr-17-implementation)
     - [Requester And Responser Boot](#requester-and-responser-boot)
     - [Middleware Boot](#middleware-boot)
@@ -103,6 +104,7 @@ use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
+use Tobento\Service\Uri\AssetUriInterface;
 use Tobento\Service\Uri\BaseUriInterface;
 use Tobento\Service\Uri\CurrentUriInterface;
 use Tobento\Service\Uri\PreviousUriInterface;
@@ -119,6 +121,7 @@ $request = $app->get(ServerRequestInterface::class);
 $response = $app->get(ResponseInterface::class);
 
 // returns UriInterface
+$assetUri = $app->get(AssetUriInterface::class);
 $baseUri = $app->get(BaseUriInterface::class);
 $currentUri = $app->get(CurrentUriInterface::class);
 $previousUri = $app->get(PreviousUriInterface::class);
@@ -135,6 +138,22 @@ $app->run();
 ```
 
 Check out the [**Uri Service**](https://github.com/tobento-ch/service-uri) to learn more about the base and current uri.
+
+### Http Functions
+
+The following Http functions are available:
+
+```php
+use function Tobento\App\Http\{assetUri, baseUri};
+use Tobento\Service\Uri\AssetUriInterface;
+use Tobento\Service\Uri\BaseUriInterface;
+
+var_dump(assetUri() instanceof AssetUriInterface);
+// bool(true)
+
+var_dump(baseUri() instanceof BaseUriInterface);
+// bool(true)
+```
 
 ### Swap PSR-7 And PSR-17 Implementation
 
