@@ -140,6 +140,19 @@ class RouteHandler implements RouteHandlerInterface
             }
         }
         
+        // If it is a class, we use app->get() method to support the app->on() method.
+        if (is_string($routeHandler)) {
+            if (str_contains($routeHandler, '::')) {
+                $routeHandler = explode('::', $routeHandler, 2);
+            } else {
+                $routeHandler = [$routeHandler];
+            }
+        }
+        
+        if (is_array($routeHandler) && is_string($routeHandler[0])) {
+            $routeHandler[0] = $this->app->get($routeHandler[0]);
+        }
+        
         return $this->app->call($routeHandler, $arguments->getParameters());
     }
     
