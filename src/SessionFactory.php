@@ -15,9 +15,6 @@ namespace Tobento\App\Http;
 
 use Tobento\Service\Session\SessionFactory as DefaultSessionFactory;
 use Tobento\Service\Session\SessionInterface;
-use Tobento\Service\Session\Validations;
-use Tobento\Service\Session\HttpUserAgentValidation;
-use Tobento\Service\Session\RemoteAddrValidation;
 use Tobento\Service\Uri\BaseUriInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -50,12 +47,9 @@ class SessionFactory extends DefaultSessionFactory
             $basePath = $this->baseUri->getPath();
             $config['cookiePath'] = rtrim($basePath, '/').'/';
         }
-        
-        if (!isset($config['validation'])) {
-            $config['validation'] = new Validations(
-                new RemoteAddrValidation($this->request->getServerParams()['REMOTE_ADDR'] ?? null),
-                new HttpUserAgentValidation($this->request->getServerParams()['HTTP_USER_AGENT'] ?? null),
-            );
+
+        if (isset($config['validation']) && is_callable($config['validation'])) {
+            $config['validation'] = $config['validation']($this->request);
         }
         
         return parent::createSession($name, $config);
