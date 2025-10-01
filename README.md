@@ -53,7 +53,7 @@ composer require tobento/app-http
 
 ## Requirements
 
-- PHP 8.0 or greater
+- PHP 8.4 or greater
 
 # Documentation
 
@@ -78,7 +78,7 @@ The http boot does the following:
 use Tobento\App\AppFactory;
 
 // Create the app
-$app = (new AppFactory())->createApp();
+$app = new AppFactory()->createApp();
 
 // Adding boots
 $app->boot(\Tobento\App\Http\Boot\Http::class);
@@ -110,7 +110,7 @@ use Tobento\Service\Uri\CurrentUriInterface;
 use Tobento\Service\Uri\PreviousUriInterface;
 
 // Create the app
-$app = (new AppFactory())->createApp();
+$app = new AppFactory()->createApp();
 
 // Adding boots
 $app->boot(\Tobento\App\Http\Boot\Http::class);
@@ -173,7 +173,7 @@ use Tobento\Service\Requester\RequesterInterface;
 use Tobento\Service\Responser\ResponserInterface;
 
 // Create the app
-$app = (new AppFactory())->createApp();
+$app = new AppFactory()->createApp();
 
 // You may add the session boot to enable
 // flash messages and flash input data.
@@ -215,7 +215,7 @@ The middleware boot does the following:
 use Tobento\App\AppFactory;
 
 // Create the app
-$app = (new AppFactory())->createApp();
+$app = new AppFactory()->createApp();
 
 // Adding boots
 $app->boot(\Tobento\App\Http\Boot\Middleware::class);
@@ -442,7 +442,7 @@ use Tobento\App\AppFactory;
 use Tobento\Service\Routing\RouterInterface;
 
 // Create the app
-$app = (new AppFactory())->createApp();
+$app = new AppFactory()->createApp();
 
 // Adding boots
 $app->boot(\Tobento\App\Http\Boot\Routing::class);
@@ -513,7 +513,7 @@ Then adding your routes boot on the app:
 use Tobento\App\AppFactory;
 
 // Create the app
-$app = (new AppFactory())->createApp();
+$app = new AppFactory()->createApp();
 
 // Adding boots
 $app->boot(RoutesBoot::class);
@@ -593,7 +593,7 @@ Finally, add the route handler:
 use Tobento\App\Http\Routing\RouteHandlerInterface;
 
 // Create the app
-$app = (new AppFactory())->createApp();
+$app = new AppFactory()->createApp();
 
 // Adding boots:
 $app->boot(\Tobento\App\Http\Boot\Routing::class);
@@ -636,7 +636,7 @@ use Tobento\Service\Session\SessionInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 // Create the app
-$app = (new AppFactory())->createApp();
+$app = new AppFactory()->createApp();
 
 // Adding boots
 $app->boot(\Tobento\App\Http\Boot\Middleware::class);
@@ -733,7 +733,7 @@ use Tobento\Service\Cookie\CookieValuesFactoryInterface;
 use Tobento\Service\Cookie\CookiesProcessorInterface;
 
 // Create the app
-$app = (new AppFactory())->createApp();
+$app = new AppFactory()->createApp();
 
 // Adding boots
 $app->boot(\Tobento\App\Http\Boot\Cookies::class);
@@ -766,7 +766,7 @@ use Tobento\Service\Cookie\CookiesInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 // Create the app
-$app = (new AppFactory())->createApp();
+$app = new AppFactory()->createApp();
 
 // Adding boots
 $app->boot(\Tobento\App\Http\Boot\Routing::class);
