@@ -9,6 +9,12 @@
  * @link        https://www.tobento.ch
  */
 
+use Psr\Http\Message\ServerRequestInterface;
+use Tobento\Service\Session\HttpUserAgentValidation;
+use Tobento\Service\Session\RemoteAddrValidation;
+use Tobento\Service\Session\ValidationInterface;
+use Tobento\Service\Session\Validations;
+
 return [
 
     /*
@@ -31,6 +37,12 @@ return [
         'httpOnly' => true,
         'saveHandler' => null,
         'validation' => null,
+        /*'validation' => static function(ServerRequestInterface $request): ValidationInterface {
+            return new Validations(
+                new RemoteAddrValidation($request->getServerParams()['REMOTE_ADDR'] ?? null),
+                new HttpUserAgentValidation($request->getServerParams()['HTTP_USER_AGENT'] ?? null),
+            );
+        },*/
     ],
     
     /*
