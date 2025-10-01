@@ -49,11 +49,6 @@ class Middleware extends Boot
     public const REBOOTABLE = ['terminate'];
     
     /**
-     * @var array
-     */
-    protected array $middlewareReplace = [];
-    
-    /**
      * Boot application services.
      *
      * @param Config $config
