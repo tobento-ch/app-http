@@ -29,7 +29,8 @@ class PreviousUriSession implements MiddlewareInterface
     /**
      * Create a new PreviousUriSession.
      *
-     * @param BaseUriInterface $baseUri
+     * @param null|CurrentUriInterface $currentUri
+     * @param null|RequesterInterface $requester
      */
     public function __construct(
         protected null|CurrentUriInterface $currentUri = null,
