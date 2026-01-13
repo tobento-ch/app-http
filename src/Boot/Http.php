@@ -37,9 +37,10 @@ use Tobento\Service\Config\ConfigInterface;
 use Tobento\Service\Routing\DomainsInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
@@ -137,6 +138,9 @@ class Http extends Boot
                         
             return $serverRequest;
         });
+
+        // RequestFactory
+        $this->app->set(RequestFactoryInterface::class, Psr17Factory::class);
         
         // ResponseFactory
         $this->app->set(ResponseFactoryInterface::class, Psr17Factory::class);
