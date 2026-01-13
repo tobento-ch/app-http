@@ -18,6 +18,7 @@ use Tobento\App\AppInterface;
 use Tobento\App\AppFactory;
 use Tobento\App\Http\Boot\Http;
 use Tobento\App\Http\ResponseEmitterInterface;
+use Tobento\App\Http\SimpleResponseEmitterInterface;
 use Tobento\App\Http\Test\Mock\ResponseEmitter;
 use Tobento\App\Http\HttpErrorHandlersInterface;
 use Tobento\Service\Console\Command;
@@ -28,6 +29,7 @@ use Tobento\Service\Uri\AssetUriInterface;
 use Tobento\Service\Uri\BaseUriInterface;
 use Tobento\Service\Uri\CurrentUriInterface;
 use Tobento\Service\Uri\PreviousUriInterface;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -136,10 +138,21 @@ class HttpTest extends TestCase
             $app->get(HttpErrorHandlersInterface::class)
         );
         
+        // Client
+        $this->assertInstanceof(
+            ClientInterface::class,
+            $app->get(ClientInterface::class)
+        );
+        
         // ResponseEmitterInterface
         $this->assertInstanceof(
             ResponseEmitterInterface::class,
             $app->get(ResponseEmitterInterface::class)
+        );
+        
+        $this->assertInstanceof(
+            SimpleResponseEmitterInterface::class,
+            $app->get(SimpleResponseEmitterInterface::class)
         );
     }
     
