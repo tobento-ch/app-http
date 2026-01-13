@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace Tobento\App\Http\Test\Boot;
+namespace Tobento\App\Http\Test;
 
 use PHPUnit\Framework\TestCase;
 use Tobento\App\Http\ResponseEmitterInterface;
@@ -27,9 +27,6 @@ use Psr\Http\Message\ResponseInterface;
 use Exception;
 use Throwable;
 
-/**
- * ResponseEmitterTest
- */
 class ResponseEmitterTest extends TestCase
 {
     public function testImplementsInterface()
