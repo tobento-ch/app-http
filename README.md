@@ -93,10 +93,11 @@ Check out ```app/config/http.php``` to change needed values.
 
 ### Request And Response
 
-You may access the PSR-7 and PSR-17 interfaces by the app:
+You may access the PSR-7, PSR-17 and PSR-18 interfaces by the app:
 
 ```php
 use Tobento\App\AppFactory;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -104,6 +105,8 @@ use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
+use Tobento\App\Http\ResponseEmitterInterface;
+use Tobento\App\Http\SimpleResponseEmitterInterface;
 use Tobento\Service\Uri\AssetUriInterface;
 use Tobento\Service\Uri\BaseUriInterface;
 use Tobento\Service\Uri\CurrentUriInterface;
@@ -116,22 +119,29 @@ $app = new AppFactory()->createApp();
 $app->boot(\Tobento\App\Http\Boot\Http::class);
 $app->booting();
 
-// PSR-7
+// PSR-18 HTTP Client
+$client = $app->get(ClientInterface::class);
+
+// PSR-7 Request & Response
 $request = $app->get(ServerRequestInterface::class);
 $response = $app->get(ResponseInterface::class);
 
-// returns UriInterface
+// URI Services (all return UriInterface)
 $assetUri = $app->get(AssetUriInterface::class);
 $baseUri = $app->get(BaseUriInterface::class);
 $currentUri = $app->get(CurrentUriInterface::class);
 $previousUri = $app->get(PreviousUriInterface::class);
 // Session Boot is needed, otherwise it is always same as base uri.
 
-// PSR-17
+// PSR-17 Factories
 $responseFactory = $app->get(ResponseFactoryInterface::class);
 $streamFactory = $app->get(StreamFactoryInterface::class);
 $uploadedFileFactory = $app->get(UploadedFileFactoryInterface::class);
 $uriFactory = $app->get(UriFactoryInterface::class);
+
+// Response Emitters
+$responseEmitter = $app->get(ResponseEmitterInterface::class);
+$simpleResponseEmitter = $app->get(SimpleResponseEmitterInterface::class);
 
 // Run the app
 $app->run();
