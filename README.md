@@ -98,9 +98,10 @@ You may access the PSR-7, PSR-17 and PSR-18 interfaces by the app:
 ```php
 use Tobento\App\AppFactory;
 use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
@@ -134,6 +135,7 @@ $previousUri = $app->get(PreviousUriInterface::class);
 // Session Boot is needed, otherwise it is always same as base uri.
 
 // PSR-17 Factories
+$requestFactory = $app->get(RequestFactoryInterface::class);
 $responseFactory = $app->get(ResponseFactoryInterface::class);
 $streamFactory = $app->get(StreamFactoryInterface::class);
 $uploadedFileFactory = $app->get(UploadedFileFactoryInterface::class);
