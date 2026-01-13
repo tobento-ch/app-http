@@ -18,8 +18,10 @@ use Tobento\App\Boot\Config;
 use Tobento\App\Boot\Functions;
 use Tobento\App\Http\HttpErrorHandlersInterface;
 use Tobento\App\Http\HttpErrorHandlers;
-use Tobento\App\Http\ResponseEmitterInterface;
 use Tobento\App\Http\ResponseEmitter;
+use Tobento\App\Http\ResponseEmitterInterface;
+use Tobento\App\Http\SimpleResponseEmitter;
+use Tobento\App\Http\SimpleResponseEmitterInterface;
 use Tobento\App\Migration\Boot\Migration;
 use Tobento\Service\ErrorHandler\AutowiringThrowableHandlerFactory;
 use Tobento\Service\Uri\BaseUriInterface;
@@ -34,6 +36,7 @@ use Tobento\Service\Uri\AssetUri;
 use Tobento\Service\Config\ConfigInterface;
 use Tobento\Service\Routing\DomainsInterface;
 use Psr\Container\ContainerInterface;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -101,9 +104,13 @@ class Http extends Boot
                 new AutowiringThrowableHandlerFactory($container)
             );
         });
-
+        
+        // Client
+        $this->app->set(ClientInterface::class, \Symfony\Component\HttpClient\Psr18Client::class);
+        
         // ResponseEmitter
         $this->app->set(ResponseEmitterInterface::class, ResponseEmitter::class);
+        $this->app->set(SimpleResponseEmitterInterface::class, SimpleResponseEmitter::class);
         
         // UriFactory
         $this->app->set(UriFactoryInterface::class, Psr17Factory::class);
