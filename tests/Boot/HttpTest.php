@@ -31,6 +31,7 @@ use Tobento\Service\Uri\CurrentUriInterface;
 use Tobento\Service\Uri\PreviousUriInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -112,6 +113,11 @@ class HttpTest extends TestCase
         );
 
         // PSR-17
+        $this->assertInstanceof(
+            RequestFactoryInterface::class,
+            $app->get(RequestFactoryInterface::class)
+        );
+        
         $this->assertInstanceof(
             ResponseFactoryInterface::class,
             $app->get(ResponseFactoryInterface::class)
