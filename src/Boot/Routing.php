@@ -137,10 +137,14 @@ class Routing extends Boot
             $config = $this->app->get(ConfigInterface::class);
             $container = $this->app->get(ContainerInterface::class);
             
+            $uri = $request->getUri();
+            $path = rawurldecode($uri->getPath());
+            $query = $uri->getQuery();
+            
             $router = new Router(
                 new RequestData(
                     $request->getMethod(),
-                    rawurldecode($request->getUri()->getPath()),
+                    $query ? $path.'?'.$query : $path,
                     $request->getUri()->getHost()
                 ),
                 new UrlGenerator(
