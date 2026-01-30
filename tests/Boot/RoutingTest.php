@@ -486,5 +486,31 @@ class RoutingTest extends TestCase
         (new TestResponse($app->get(Http::class)->getResponse()))
             ->isStatusCode(200)
             ->isBodySame('result');
-    }    
+    }
+    
+    public function testQueryParametersAreAvailable()
+    {
+        $app = $this->createApp();
+
+        // Create a request with query parameters
+        $app->on(ServerRequestInterface::class, function() {
+            return (new Psr17Factory())->createServerRequest(
+                method: 'GET',
+                uri: 'http://localhost/blog/5/edit?foo=bar&x=1',
+                serverParams: [],
+            );
+        });
+
+        $app->booting();
+
+        $app->route('GET', 'blog/{id}/edit', function(RouterInterface $router, $id) {
+            return $router->getRequestData()->uri();
+        })->name('blog.edit');
+
+        $app->run();
+
+        (new TestResponse($app->get(Http::class)->getResponse()))
+            ->isStatusCode(200)
+            ->isBodySame('blog/5/edit?foo=bar&x=1');
+    }
 }
