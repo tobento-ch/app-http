@@ -43,13 +43,13 @@ class ErrorHandlerTest extends TestCase
         bool $translation = false,
     ): AppInterface {
         if ($deleteDir) {
-            (new Dir())->delete(__DIR__.'/../app/');
+            new Dir()->delete(__DIR__.'/../app/');
         }
         
-        (new Dir())->create(__DIR__.'/../app/');
-        (new Dir())->create(__DIR__.'/../app/config/');
+        new Dir()->create(__DIR__.'/../app/');
+        new Dir()->create(__DIR__.'/../app/config/');
         
-        $app = (new AppFactory())->createApp();
+        $app = new AppFactory()->createApp();
         
         $app->dirs()
             ->dir(realpath(__DIR__.'/../app/'), 'app')
@@ -92,7 +92,7 @@ class ErrorHandlerTest extends TestCase
     
     public static function tearDownAfterClass(): void
     {
-        (new Dir())->delete(__DIR__.'/../app/');
+        new Dir()->delete(__DIR__.'/../app/');
     }
     
     public function testHandlesHttpException()
@@ -109,7 +109,7 @@ class ErrorHandlerTest extends TestCase
 
         $app->run();
         
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(404)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('404 | Not Found');
@@ -129,7 +129,7 @@ class ErrorHandlerTest extends TestCase
 
         $app->run();
         
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(404)
             ->isContentType('application/json')
             ->isBodySame('{"status":404,"message":"404 | Not Found"}');
@@ -153,7 +153,7 @@ class ErrorHandlerTest extends TestCase
 
         $app->run();
         
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(404)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('Custom')
@@ -194,7 +194,7 @@ class ErrorHandlerTest extends TestCase
 
         $app->run();
         
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(403)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('403 | Forbidden');
@@ -214,7 +214,7 @@ class ErrorHandlerTest extends TestCase
 
         $app->run();
         
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(404)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('404 | Not Found');
@@ -234,7 +234,7 @@ class ErrorHandlerTest extends TestCase
 
         $app->run();
         
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(429)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('429 | Too Many Requests')
@@ -255,7 +255,7 @@ class ErrorHandlerTest extends TestCase
 
         $app->run();
         
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(401)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('401 | Unauthorized');
@@ -271,7 +271,7 @@ class ErrorHandlerTest extends TestCase
 
         $app->run();
         
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(404)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('404 | Not Found');
@@ -287,7 +287,7 @@ class ErrorHandlerTest extends TestCase
         
         $app->run();
                 
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(404)
             ->isContentType('application/json')
             ->isBodySame('{"status":404,"message":"404 | Not Found"}');
@@ -303,7 +303,7 @@ class ErrorHandlerTest extends TestCase
 
         $app->run();
 
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(403)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('403 | Forbidden');
@@ -319,7 +319,7 @@ class ErrorHandlerTest extends TestCase
 
         $app->run();
 
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(403)
             ->isContentType('application/json')
             ->isBodySame('{"status":403,"message":"403 | Forbidden"}');
@@ -341,7 +341,7 @@ class ErrorHandlerTest extends TestCase
                 
         $app->run();
 
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(403)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('419 | Resource Expired');
@@ -363,7 +363,7 @@ class ErrorHandlerTest extends TestCase
                 
         $app->run();
 
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(403)
             ->isContentType('application/json')
             ->isBodySame('{"status":403,"message":"419 | Resource Expired"}');
@@ -383,7 +383,7 @@ class ErrorHandlerTest extends TestCase
                 
         $app->run();
 
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(500)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('500 | Internal Server Error');
@@ -403,7 +403,7 @@ class ErrorHandlerTest extends TestCase
                 
         $app->run();
 
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(500)
             ->isContentType('application/json')
             ->isBodySame('{"status":500,"message":"500 | Internal Server Error"}');
@@ -423,7 +423,7 @@ class ErrorHandlerTest extends TestCase
                 
         $app->run();
 
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(500)
             ->isContentType('text/plain; charset=utf-8')
             ->isBodySame('500 | Interner Serverfehler');
@@ -443,9 +443,49 @@ class ErrorHandlerTest extends TestCase
                 
         $app->run();
 
-        (new TestResponse($app->get(Http::class)->getResponse()))
+        new TestResponse($app->get(Http::class)->getResponse())
             ->isStatusCode(500)
             ->isContentType('application/json')
             ->isBodySame('{"status":500,"message":"500 | Interner Serverfehler"}');
+    }
+    
+    public function testHttpExceptionMessageParams()
+    {
+        $exception = (new Exception\HttpException(
+            statusCode: 403,
+            message: 'Resource :name not found.',
+        ))->withMessageParams([
+            ':name' => 'foo',
+        ]);
+
+        $this->assertSame(
+            [':name' => 'foo'],
+            $exception->messageParams()
+        );
+    }
+    
+    public function testHandlesHttpExceptionWithMessageParams()
+    {
+        $app = $this->createApp(request: [
+            'method' => 'GET',
+            'uri' => 'foo',
+            'serverParams' => [],
+        ], translation: true);
+
+        $app->route('GET', 'foo', function() {
+            throw (new Exception\HttpException(
+                statusCode: 403,
+                message: 'Resource :name not found.',
+            ))->withMessageParams([
+                ':name' => 'foo',
+            ]);
+        });
+
+        $app->run();
+
+        new TestResponse($app->get(Http::class)->getResponse())
+            ->isStatusCode(403)
+            ->isContentType('text/plain; charset=utf-8')
+            ->isBodySame('Resource foo not found.');
     }
 }
