@@ -22,6 +22,11 @@ use Throwable;
 class HttpException extends RuntimeException
 {
     /**
+     * @var array
+     */
+    protected array $messageParams = [];
+    
+    /**
      * Create a new HttpException.
      *
      * @param int $statusCode
@@ -58,5 +63,27 @@ class HttpException extends RuntimeException
     public function headers(): array
     {
         return $this->headers;
+    }
+    
+    /**
+    * Returns the message parameters.
+    *
+    * @return array
+    */
+    public function messageParams(): array
+    {
+        return $this->messageParams;
+    }
+    
+    /**
+    * Sets the message parameters.
+    *
+    * @param array $params
+    * @return static
+    */
+    public function withMessageParams(array $params): static
+    {
+        $this->messageParams = $params;
+        return $this;
     }
 }
