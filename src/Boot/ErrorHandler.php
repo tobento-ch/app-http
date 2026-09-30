@@ -99,8 +99,8 @@ class ErrorHandler extends Boot
         
         if ($t instanceof HttpException) {
             $response = $requester->wantsJson()
-                ? $this->renderJson(code: $t->statusCode(), message: $t->getMessage())
-                : $this->renderView(code: $t->statusCode(), message: $t->getMessage());
+                ? $this->renderJson(code: $t->statusCode(), message: $t->getMessage(), parameters: $t->messageParams())
+                : $this->renderView(code: $t->statusCode(), message: $t->getMessage(), parameters: $t->messageParams());
             
             foreach($t->headers() as $name => $value) {
                 $response = $response->withHeader($name, $value);
