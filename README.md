@@ -937,11 +937,24 @@ class SomeController
     {
         throw new HttpException(statusCode: 404);
         
+        // or with custom message:
+        throw new HttpException(statusCode: 404, message: 'Custom message');
+        
+        // or with message parameters:
+        throw new HttpException(
+            statusCode: 404,
+            message: 'Resource :name not found.',
+        )->withMessageParams([
+            ':name' => 'foo',
+        ]);
+
         // or:
         throw new NotFoundException();
     }
 }
 ```
+
+> **Note:** All HTTP exceptions support the `withMessageParams()` method. If the [App Translation](https://github.com/tobento-ch/app-translation) bundle is installed, messages are translated and any defined message parameters are replaced automatically when the exception is rendered. Without a translator, the original message is rendered as-is and message parameters remain unchanged.
 
 ### Render Exception Views
 
