@@ -22,7 +22,15 @@ return [
     
     'middlewares' => [
         // priority => middleware
-        8000 => \Tobento\App\Http\Middleware\SecurePolicyHeaders::class,
+        8000 => [
+            \Tobento\App\Http\Middleware\SecurePolicyHeaders::class,
+            'headers' => [
+                'Strict-Transport-Security' => 'max-age=31536000; includeSubDomains; preload',
+                'X-Frame-Options' => 'SAMEORIGIN',
+                'X-Content-Type-Options' => 'nosniff',
+                'Referrer-Policy' => 'same-origin',
+            ],
+        ],
     ],
     
     
