@@ -21,10 +21,15 @@ use Tobento\App\Http\ResponseEmitterInterface;
 use Tobento\App\Http\SimpleResponseEmitterInterface;
 use Tobento\App\Http\Test\Mock\ResponseEmitter;
 use Tobento\App\Http\HttpErrorHandlersInterface;
+use Tobento\App\Http\Csp;
+use Tobento\App\Http\CspInterface;
 use Tobento\Service\Console\Command;
 use Tobento\Service\Console\InteractorInterface;
 use Tobento\Service\Console\Test\TestCommand;
 use Tobento\Service\Filesystem\Dir;
+use Tobento\Service\View;
+use Tobento\Service\Dir\Dir as ServiceDir;
+use Tobento\Service\Dir\Dirs;
 use Tobento\Service\Uri\AssetUriInterface;
 use Tobento\Service\Uri\BaseUriInterface;
 use Tobento\Service\Uri\CurrentUriInterface;
@@ -160,6 +165,12 @@ class HttpTest extends TestCase
             SimpleResponseEmitterInterface::class,
             $app->get(SimpleResponseEmitterInterface::class)
         );
+        
+        // Content Security Policy
+        $this->assertInstanceof(
+            CspInterface::class,
+            $app->get(CspInterface::class)
+        );
     }
     
     public function testFunctionAreAvailable()
@@ -287,5 +298,41 @@ class HttpTest extends TestCase
             ->expectsOutput('http://localhost')
             ->expectsExitCode(0)
             ->execute($app->container());
+    }
+    
+    public function testCspIsSharedAndUsesDefaultDirectives()
+    {
+        $app = $this->createApp();
+        $app->booting();
+        
+        $csp = $app->get(CspInterface::class);
+        
+        $this->assertSame($csp, $app->get(CspInterface::class));
+        $this->assertSame(new Csp()->directives(), $csp->directives());
+    }
+    
+    public function testViewHasCspNonceAndCspMacro()
+    {
+        $app = $this->createApp();
+        
+        $app->set(View\ViewInterface::class, function () {
+            return new View\View(
+                new View\PhpRenderer(new Dirs(new ServiceDir(realpath(__DIR__.'/../view/')))),
+                new View\Data(),
+                new View\Assets(__DIR__.'/../public/src/', 'https://www.example.com/src/')
+            );
+        });
+        
+        $app->booting();
+        
+        $csp = $app->get(CspInterface::class);
+        $view = $app->get(View\ViewInterface::class);
+        
+        $this->assertSame($csp->nonce(), $view->get('cspNonce'));
+        $this->assertSame($csp, $view->csp());
+        
+        $view->csp()->add('frame-src', 'https://video.example.com');
+        
+        $this->assertStringContainsString("frame-src 'self' https://video.example.com", $csp->toHeaderValue());
     }
 }
