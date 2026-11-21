@@ -72,4 +72,28 @@ return [
     
     'signature_key' => '{signature_key}',
     
+    /*
+    |--------------------------------------------------------------------------
+    | Content Security Policy
+    |--------------------------------------------------------------------------
+    |
+    | The default directives of the Content-Security-Policy header.
+    | Apps add their sources on the pages needing them,
+    | e.g. a payment provider's script on the checkout.
+    | "nonce" is replaced by the nonce of the request.
+    | If empty, the default directives of the Csp class are used.
+    |
+    */
+    
+    'csp' => [
+        'base-uri' => ['none'],
+        'default-src' => ['self'],
+        'img-src' => ['self', 'data:'],
+        'script-src' => ['nonce', 'self'],
+        'style-src' => ['nonce', 'self'],
+        'object-src' => ['none'],
+        'form-action' => ['self'],
+        'frame-ancestors' => ['self'],
+    ],
+    
 ];
