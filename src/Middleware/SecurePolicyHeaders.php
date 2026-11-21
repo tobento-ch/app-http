@@ -18,19 +18,14 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Tobento\App\AppInterface;
+use Tobento\App\Http\CspInterface;
 use Tobento\App\Http\ResponseEmitterInterface;
-use Tobento\Service\View\ViewInterface;
 
 /**
  * SecurePolicyHeaders
  */
 class SecurePolicyHeaders implements MiddlewareInterface
 {
-    /**
-     * @var string
-     */
-    protected string $nonce;
-    
     /**
      * @var bool
      */
@@ -40,16 +35,19 @@ class SecurePolicyHeaders implements MiddlewareInterface
      * Create a new SecurePolicyHeaders.
      *
      * @param AppInterface $app
+     * @param CspInterface $csp
+     * @param array<string, string> $headers The headers to add, except the Content-Security-Policy header.
      */
     public function __construct(
         AppInterface $app,
+        protected CspInterface $csp,
+        protected array $headers = [
+            'Strict-Transport-Security' => 'max-age=31536000; includeSubDomains; preload',
+            'X-Frame-Options' => 'SAMEORIGIN',
+            'X-Content-Type-Options' => 'nosniff',
+            'Referrer-Policy' => 'same-origin',
+        ],
     ) {
-        $this->nonce = $this->generateNonce();
-        
-        $app->on(ViewInterface::class, function (ViewInterface $view): void {
-            $view->with('cspNonce', $this->nonce);
-        });
-        
         // If an Exception is thrown in the middleware process we add CSP header on response emitting:
         $app->on(ResponseEmitterInterface::class, function(ResponseEmitterInterface $emitter): void {
             if (! $this->headersAdded) {
@@ -70,7 +68,7 @@ class SecurePolicyHeaders implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (empty($request->getAttribute('csp_nonce'))) {
-            $request = $request->withAttribute('csp_nonce', $this->nonce);
+            $request = $request->withAttribute('csp_nonce', $this->csp->nonce());
         }
         
         $response = $handler->handle($request);
@@ -83,43 +81,30 @@ class SecurePolicyHeaders implements MiddlewareInterface
     /**
      * Add CSP header to response.
      *
+     * A header the response has set itself is kept, e.g. by a route allowing other framing.
+     *
      * @param ResponseInterface $response
      * @return ResponseInterface
      */
     protected function addCspHeaders(ResponseInterface $response): ResponseInterface
     {
-        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
-        // https://www.owasp.org/index.php/HTTP_Strict_Transport_Security_Cheat_Sheet        
-        $response = $response->withHeader(
-            'Strict-Transport-Security',
-            'max-age=31536000; includeSubDomains; preload'
-        );
-
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
-        $response = $response->withHeader(
-            'Content-Security-Policy',
-            'base-uri \'none\'; default-src \'self\'; img-src \'self\' data:; script-src \'nonce-'.$this->nonce.'\' \'self\'; object-src \'none\'; style-src \'nonce-'.$this->nonce.'\' \'self\''
-        );
-
-        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
-        $response = $response->withHeader('X-Frame-Options', 'DENY');
+        $csp = $this->csp->toHeaderValue();
         
-        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options    
-        $response = $response->withHeader('X-Content-Type-Options', 'nosniff');
-                
+        if ($csp !== '' && ! $response->hasHeader('Content-Security-Policy')) {
+            $response = $response->withHeader('Content-Security-Policy', $csp);
+        }
+        
+        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
-        $response = $response->withHeader('Referrer-Policy', 'same-origin');
+        foreach ($this->headers as $name => $value) {
+            if (is_string($name) && is_string($value) && ! $response->hasHeader($name)) {
+                $response = $response->withHeader($name, $value);
+            }
+        }
         
         return $response;
-    }
-    
-    /**
-     * Generates a nonce.
-     *
-     * @return string
-     */
-    protected function generateNonce(): string
-    {
-        return base64_encode(random_bytes(32));
     }
 }
