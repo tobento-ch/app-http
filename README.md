@@ -13,6 +13,7 @@ Http, routing, middleware and session support for the app.
         - [Request And Response](#request-and-response)
         - [Http Functions](#http-functions)
         - [Swap PSR-7 And PSR-17 Implementation](#swap-psr-7-and-psr-17-implementation)
+        - [Content Security Policy](#content-security-policy)
     - [Requester And Responser Boot](#requester-and-responser-boot)
     - [Middleware Boot](#middleware-boot)
         - [Add Middleware via Config](#add-middleware-via-config)
@@ -72,6 +73,7 @@ The http boot does the following:
 * installs and loads http config file
 * base and current uri implementation
 * http error handling implementation
+* content security policy implementation
 * emits response
 
 ```php
@@ -171,6 +173,72 @@ var_dump(baseUri() instanceof BaseUriInterface);
 
 You might swap the PSR-7 and PSR-17 implementation to any alternative.\
 Check out the [**App - Customization**](https://github.com/tobento-ch/app#customization) to learn more about it.
+
+### Content Security Policy
+
+The http boot provides a ```CspInterface``` holding the Content Security Policy of the current request. The [Secure Policy Headers Middleware](#secure-policy-headers-middleware) adds it as ```Content-Security-Policy``` header to the response.
+
+**Default directives**
+
+The default directives are set in the ```app/config/http.php``` file:
+
+```php
+'csp' => [
+    'base-uri' => ['none'],
+    'default-src' => ['self'],
+    'img-src' => ['self', 'data:'],
+    'script-src' => ['nonce', 'self'],
+    'style-src' => ['nonce', 'self'],
+    'object-src' => ['none'],
+    'form-action' => ['self'],
+    'frame-ancestors' => ['self'],
+],
+```
+
+Keywords such as ```self``` or ```none``` are written without quotes, they get quoted in the header. The source ```nonce``` is replaced by the nonce of the request, e.g. ```'nonce-Abc123'```. Hosts and schemes such as ```https://example.com``` or ```data:``` are used as they are. If the ```csp``` key is missing or empty, the default directives above are used.
+
+**Adding sources**
+
+Add sources on the pages needing them, e.g. a payment provider's script on the checkout. The sources are only added to the header of the current request, so other pages keep the default directives:
+
+```php
+use Tobento\App\AppFactory;
+use Tobento\App\Http\CspInterface;
+
+// Create the app
+$app = new AppFactory()->createApp();
+
+// Adding boots
+$app->boot(\Tobento\App\Http\Boot\Routing::class);
+$app->booting();
+
+// Routes
+$app->route('GET', 'checkout', function (CspInterface $csp) {
+    $csp->add('script-src', 'https://js.example.com');
+    $csp->add('frame-src', 'https://js.example.com');
+    
+    return 'checkout';
+});
+
+// Run the app
+$app->run();
+
+// Content-Security-Policy: ... script-src 'nonce-Abc123' 'self' https://js.example.com; ... frame-src 'self' https://js.example.com
+```
+
+A directive not set yet, such as ```frame-src``` above, starts with the sources of the directive the browser falls back to, mostly ```default-src```. So your own frames keep working. Directives without a fallback, such as ```form-action``` or ```frame-ancestors```, start empty.
+
+**Adding sources in views**
+
+If using the [App View](https://github.com/tobento-ch/app-view) bundle, you may add sources in views using the ```csp``` macro:
+
+```php
+<?php $view->csp()->add('frame-src', 'https://video.example.com'); ?>
+
+<iframe src="https://video.example.com/embed/123" title="Video"></iframe>
+```
+
+The sources must be added before the response is returned, as the header is created afterwards. This is the case for views rendered by the route handler.
 
 ## Requester And Responser Boot
 
@@ -411,30 +479,48 @@ $response = $response->withHeader('X-Exclude-Previous-Url', '1');
 This middleware will add the following secure policy headers to the response:
 
 * ```Strict-Transport-Security: max-age=31536000; includeSubDomains; preload```
-* ```X-Frame-Options: DENY```
+* ```X-Frame-Options: SAMEORIGIN```
 * ```X-Content-Type-Options: nosniff```
 * ```Referrer-Policy: same-origin```
-* ```Content-Security-Policy: base-uri 'none'; default-src 'self'; img-src 'self' data:; script-src 'nonce-***' 'self'; object-src 'none'; style-src 'nonce-***' 'self';```
+* ```Content-Security-Policy``` from the [Content Security Policy](#content-security-policy)
 
 In the ```app/config/middleware.php``` file:
 
 ```php
 'middlewares' => [
-    8000 => \Tobento\App\Http\Middleware\SecurePolicyHeaders::class,
+    8000 => [
+        \Tobento\App\Http\Middleware\SecurePolicyHeaders::class,
+        'headers' => [
+            'Strict-Transport-Security' => 'max-age=31536000; includeSubDomains; preload',
+            'X-Frame-Options' => 'SAMEORIGIN',
+            'X-Content-Type-Options' => 'nosniff',
+            'Referrer-Policy' => 'same-origin',
+        ],
+    ],
 ],
 ```
 
+A header the response has set itself is kept, e.g. a route sending ```X-Frame-Options: DENY```.
+
 **Using inline scripts and styles**
 
-The middleware will add a ```Content-Security-Policy``` header with a nonce for ```script-src``` and ```style-src```. Therefore, to allow inline scripts or styles you must add the nonce to the html:
+The ```Content-Security-Policy``` header has a nonce for ```script-src``` and ```style-src```. Therefore, to allow inline scripts or styles you must add the nonce to the html.
 
-If using the [App View](https://github.com/tobento-ch/app-view) bundle, you can retrieve the nonce from the view:
+If using the [App View](https://github.com/tobento-ch/app-view) bundle, you can retrieve the nonce from the view using the ```csp``` macro:
 
 ```php
-<style nonce="<?= $view->esc($view->get('cspNonce', '')) ?>">
+<style nonce="<?= $view->esc($view->csp()->nonce()) ?>">
     ...
 </style>
 
+<script nonce="<?= $view->esc($view->csp()->nonce()) ?>">
+    ...
+</script>
+```
+
+Or using the ```cspNonce``` view data:
+
+```php
 <script nonce="<?= $view->esc($view->get('cspNonce', '')) ?>">
     ...
 </script>
