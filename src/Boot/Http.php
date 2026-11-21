@@ -22,6 +22,8 @@ use Tobento\App\Http\ResponseEmitter;
 use Tobento\App\Http\ResponseEmitterInterface;
 use Tobento\App\Http\SimpleResponseEmitter;
 use Tobento\App\Http\SimpleResponseEmitterInterface;
+use Tobento\App\Http\Csp;
+use Tobento\App\Http\CspInterface;
 use Tobento\App\Migration\Boot\Migration;
 use Tobento\Service\ErrorHandler\AutowiringThrowableHandlerFactory;
 use Tobento\Service\Uri\BaseUriInterface;
@@ -35,6 +37,7 @@ use Tobento\Service\Uri\AssetUriInterface;
 use Tobento\Service\Uri\AssetUri;
 use Tobento\Service\Config\ConfigInterface;
 use Tobento\Service\Routing\DomainsInterface;
+use Tobento\Service\View\ViewInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -59,6 +62,7 @@ class Http extends Boot
             'installs and loads http config file',
             'base and current uri implementation',
             'http error handling implementation',
+            'content security policy implementation',
         ],
         'terminate' => [
             'emits response',
@@ -197,6 +201,18 @@ class Http extends Boot
         // AssetUri
         $this->app->set(AssetUriInterface::class, function() {
             return new AssetUri($this->app->get(BaseUriInterface::class));
+        });
+        
+        // Content Security Policy:
+        $this->app->set(CspInterface::class, static function() use ($config): CspInterface {
+            $directives = $config['csp'] ?? [];
+            return new Csp(directives: is_array($directives) ? $directives : []);
+        });
+        
+        $this->app->on(ViewInterface::class, static function(ViewInterface $view, CspInterface $csp): void {
+            $view->with('cspNonce', $csp->nonce());
+            // not static, as macros are bound to the view:
+            $view->addMacro('csp', fn (): CspInterface => $csp);
         });
         
         // Functions:
